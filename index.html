@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Regulex：JavaScript Regular Expression Visualizer</title>
+<style>
+body,html * {
+margin:0;
+padding:0;
+font-family:sans-serif;
+}
+body {
+background: #303030;
+}
+.code,.code * {
+  font-family: "DejaVu Sans Mono",monospace;
+}
+h1 {
+font-size:3em;
+color:#40C0FF;
+margin:14px 0;
+padding:0 16px;
+padding-top:40px;
+padding-bottom: 20px;
+border-bottom:2px dashed grey;
+min-height:60px;
+}
+h1 em{
+color:#BBE0E0;
+font-size:small;
+padding-left:2em;
+font-style: normal;
+font-weight:normal;
+display:inline-block;
+}
+#inputCt,#errorBox {
+margin:8px 16px;
+}
+#inputCt div.re {
+background:#EEE;
+font-size:1.2em;
+line-height: 1.4em;
+color:#333;
+border:1px solid black;
+padding:4px;
+font-weight: bold;
+word-break:break-all;
+word-wrap:break-word;
+}
+#inputCt div.re table {
+border:none;
+padding:0;
+margin:0;
+width:100%;
+}
+#inputCt div.re .input {
+color:#3030C0;
+padding:0 2px;
+border:none;
+background:#EEE;
+font-size:1.2em;
+line-height: 1.4em;
+height:1.4em;
+font-weight: bold;
+word-break:break-all;
+word-wrap:break-word;
+margin:0;
+width:auto;
+}
+#inputCt div.re #input {
+display:table;
+width:100%;
+}
+#inputCt label {
+  color:white;
+  cursor:pointer;
+  display:inline-block;
+}
+#inputCt label input {
+  margin-right:4px;
+}
+#errorBox {
+background:#EEE;
+font-size:1.2em;
+line-height: 1.4em;
+border:1px solid black;
+padding:4px;
+color:darkred;
+white-space: pre;
+word-wrap:normal;
+word-break:keep-all;
+display: none;
+overflow:auto;
+}
+#visualIt,#embedIt,#exportIt {
+font-size: 16px;
+line-height: 16px;
+display: inline-block;
+margin: 10px;
+margin-left:0;
+padding:12px;
+padding-bottom:10px;
+color:#EEF;
+border:none;
+cursor:pointer;
+background: #40B0EF;
+background-image: linear-gradient(to bottom, #40B0EF,#3060A0);
+border-radius: 12px;
+text-decoration: none;
+}
+#visualIt:hover,#embedIt:hover,#exportIt:hover {
+color:#FEF;
+background: #3CB0FD;
+background-image: linear-gradient(to bottom, #3CB0FD, #3498DF);
+text-decoration: none;
+}
+#graphCt {
+padding:4px;
+margin:0px 16px;
+border:1px solid black;
+background: #EEE;
+overflow: auto;
+cursor:move;
+-webkit-touch-callout: none;
+-webkit-user-select: none;
+-khtml-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+user-select: none;
+}
+#graphCt svg {
+display:block;
+margin:0 auto;
+}
+footer div.normal {
+text-align: center;
+border-top:1px solid grey;
+margin:1em auto;
+padding:10px;
+font-size:1.2em;
+}
+footer,footer a {
+color:#EEF;
+}
+
+footer div.embed {
+  display: none;
+}
+body.embed {
+  background: #EEE;
+}
+body.embed,body.embed #graphCt {
+  margin:0;
+  padding:0;
+  border:none;
+}
+body.embed h1,
+body.embed #inputCt,
+body.embed #github {
+  display:none !important;
+}
+body.embed footer div.normal {
+  display:none;
+}
+body.embed footer div.embed {
+  display: block;
+}
+body.embed footer div.embed,body.embed div.footer a {
+  color:white;
+  font-size: 14px;
+}
+body.embed footer {
+  display:block;
+  width:auto;
+  margin:0;
+  padding:2px 10px;
+  background:rgb(75,0,130);
+  opacity: 0.85;
+  position:fixed;
+  right:0;
+  bottom:0;
+}
+body.embed{height:100%;}
+body.embed #graphCt {
+  height: 100vh;
+}
+.exportCanvas {
+  display:block;
+  margin:0 auto;
+  image-rendering: pixelated;
+}
+</style>
+</head>
+<body>
+<script>
+var params=getParams();
+if (params.embed || params.cmd=="export") {
+  document.body.className+= " embed";
+}
+
+function trim(s) {
+  return s.replace(/^\s+/,'').replace(/\s+$/,'');
+}
+
+function getParams() {
+  var params=location.hash;
+  if (!params || params.length<2) {
+    params={embed:false,re:"",highlight:true,flags:''};
+  } else {
+    params=params.slice(2);
+    params=params.split("&").reduce(function (p,a) {
+      a=a.split("=");
+      p[a[0]]=a[1];
+      return p;
+    },{});
+    params.embed=params.embed==='true';
+    params.flags=params.flags || '';
+    params.re=params.re?trim(decodeURIComponent(params.re)):'';
+  }
+  return params;
+}
+</script>
+<h1>Regulex <em>JavaScript Regular Expression Visualizer.</em></h1>
+<div id="inputCt">
+    <div class="re code">
+      <table>
+        <tr>
+          <td style="width:1em">/</td>
+          <td style="width:auto">
+            <input id="input" class="input" value="^(a|b)*?$" />
+          </td>
+          <td style="width:1em">/</td>
+          <td style="width:3em" id="flagBox"></td>
+        </tr>
+      </table>
+    </div>
+    <button id="visualIt">Visualize</button>
+    <button id="exportIt">Export Image</button>
+    <button id="embedIt">Embed On My Site!</button>
+    <label><input type="checkbox" name="flag" value="i" />IgnoreCase</label>
+    <label><input type="checkbox" name="flag" value="m" />Multiline</label>
+    <label><input type="checkbox" name="flag" value="g" />GlobalMatch</label>
+</div>
+<p id="errorBox" class="code">Error Message</p>
+<div id="graphCt" class="code"></div>
+
+<script type="text/javascript" charset="utf-8">
+
+function $(id) {return document.getElementById(id)}
+function $$(q) {return document.querySelector(q)}
+
+var raphael='src/libs/raphael';
+var visualize='src/visualize';
+var parse='src/parse';
+var Kit='src/Kit';
+
+if (params.debug) {
+  document.write('<script src="src/libs/require.js" charset="utf-8"><'+'/script>');
+  window.addEventListener('DOMContentLoaded',function () {
+    require([raphael,visualize,parse,Kit],init);
+  });
+} else {
+  document.write('<script src="dist/regulex.js" charset="utf-8"><'+'/script>');
+  window.addEventListener('DOMContentLoaded',function () {
+    raphael=require('regulex').Raphael;
+    parse = require('regulex').parse;
+    visualize = require('regulex').visualize;
+    Kit=require('regulex').Kit;
+    init(raphael,visualize,parse,Kit);
+  });
+
+}
+
+
+function init(R,visualize,parse,K) {
+var paper = R('graphCt', 10, 10);
+var input=$('input');
+var inputCt=$('inputCt');
+var visualBtn=$('visualIt');
+var embedBtn=$('embedIt');
+var exportBtn=$('exportIt');
+var errorBox=$('errorBox');
+var flags=document.getElementsByName('flag');
+var flagBox=$('flagBox');
+var getInputValue=function () {
+    return trim(input.value);
+};
+var setInputValue=function (v) {
+  return input.value=trim(v);
+};
+if (params.flags) {
+  setFlags(params.flags);
+}
+if (params.re) {
+  setInputValue(params.re);
+}
+visualIt();
+if (params.cmd=='export') {
+  showExportImage();
+  return;
+} else {
+  initListeners();
+  dragGraph($('graphCt'));
+}
+
+
+
+
+
+
+function visualIt(skipError) {
+  var re=getInputValue();
+  changeHash();
+  hideError();
+  var ret;
+  try {ret=parse(re)}
+  catch (e) {
+    if (e instanceof parse.RegexSyntaxError) {
+      if (!skipError) {
+        showError(re,e);
+      }
+    } else throw e;
+    return false;
+  }
+  visualize(ret,getFlags(),paper);
+  return true;
+}
+
+function hideError() {
+  errorBox.style.display='none';
+}
+function showError(re,err) {
+  errorBox.style.display='block';
+  var msg=["Error:"+err.message,""];
+  if (typeof err.lastIndex==='number') {
+    msg.push(re);
+    msg.push(K.repeats('-',err.lastIndex)+"^");
+  }
+  setInnerText(errorBox,msg.join("\n"));
+}
+
+function serializeHash(params) {
+  var re=getInputValue();
+  var flags=getFlags();
+  return "#!" +
+    (params.debug?"debug=true&":"") +
+    (params.cmd?"cmd="+params.cmd+"&":"") +
+    (params.embed?"embed=true&":"") +
+    "flags="+flags+"&re="+encodeURIComponent(params.re=re);
+
+}
+
+function changeHash() {
+  location.hash=serializeHash(params);
+}
+
+function initListeners() {
+  var LF='\n'.charCodeAt(0),CR='\r'.charCodeAt(0);
+  input.addEventListener('keydown',onEnter);
+  input.addEventListener('keyup',onKeyup);
+  input.addEventListener('paste',function (evt) {
+    var content=trim(evt.clipboardData.getData('text'));
+    if (content[0]==='/' && /\/[img]*$/.test(content)) {
+      evt.preventDefault();
+      var endIndex=content.lastIndexOf('/');
+      setFlags(content.slice(endIndex+1));
+      content=content.slice(1,endIndex);
+      setInputValue(content);
+    }
+    setTimeout(visualIt,50);
+  });
+  visualBtn.addEventListener('click',function () {
+    visualIt();
+  });
+  embedBtn.addEventListener('click',function () {
+    if (!visualIt()) return false;
+    var src=location.href;
+    var i=src.indexOf('#');
+    src=i>0?src.slice(0,i):src;
+    changeHash();
+    var re=getInputValue();
+    var html='<iframe frameborder="0" width="'+Math.ceil(paper.width)+'" height="'+Math.ceil(paper.height)+'" src="'+src+'#!embed=true&flags='+getFlags()+'&re='+encodeURIComponent(re)+'"></iframe>'
+    window.prompt("Copy the html code:",html);
+  });
+
+  exportBtn.addEventListener('click',function () {
+    var newParams = Object.assign({},params);
+    newParams.cmd='export';
+    var hash = serializeHash(newParams);
+    window.open(location.href.split('#!')[0]+hash,"_blank");
+  });
+
+
+  /*
+  window.addEventListener('hashchange',function () {
+    if (manualHash) return;
+    var p=getParams();
+    if (p.re && p.re!==params.re) {
+      params.re=p.re;
+      setInputValue(p.re);
+      visualIt();
+    }
+  });*/
+  for (var i=0,l=flags.length;i<l;i++) {
+    flags[i].addEventListener('change',onChangeFlags);
+  }
+
+  function onChangeFlags(e) {
+    setInnerText(flagBox,getFlags());
+    visualIt();
+    changeHash();
+  }
+
+
+  var onKeyupTid;
+  function onKeyup(e) {
+    if (e.keyCode===LF || e.keyCode===CR) {
+      return true;
+    }
+    clearTimeout(onKeyupTid);
+    onKeyupTid=setTimeout(function () {
+      var skipError=true;
+      visualIt(skipError);
+    },100);
+  }
+  function onEnter(e) {
+    if (e.keyCode===LF || e.keyCode===CR) {
+      e.preventDefault();
+      e.stopPropagation();
+      visualIt();
+    }
+  }
+}
+
+function getFlags() {
+  var fg='';
+  for (var i=0,l=flags.length;i<l;i++) {
+    if (flags[i].checked) fg+=flags[i].value;
+  }
+  return fg;
+}
+
+function setFlags(fg) {
+  for (var i=0,l=fg.length;i<l;i++) {
+    if (~fg.indexOf(flags[i].value)) flags[i].checked=true;
+    else flags[i].checked=false;
+  }
+  setInnerText(flagBox,fg);
+}
+
+function showExportImage() {
+  var ratio = window.devicePixelRatio || 1;
+  svg = graphCt.getElementsByTagName('svg')[0];
+  var w = svg.clientWidth || parseInt(getComputedStyle(svg).width);
+  var h = svg.clientHeight || parseInt(getComputedStyle(svg).height);
+  var img = new Image;
+  img.width=w;
+  img.height=h;
+  img.setAttribute('src',svgDataURL(svg));
+
+  var canvas = document.createElement( "canvas" );
+
+  canvas.width = w * ratio;
+  canvas.height = h * ratio;
+  canvas.style.width = w+"px";
+  canvas.style.height = h+"px";
+  canvas.className="exportCanvas";
+  var ctx = canvas.getContext( "2d" );
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  img.onload=function () {
+    ctx.drawImage( img, 0, 0);
+    graphCt.style.display='none';
+    document.body.appendChild(canvas);
+  };
+}
+
+function svgDataURL(svg) {
+  var svgAsXML = (new XMLSerializer).serializeToString(svg);
+  return "data:image/svg+xml," + encodeURIComponent(svgAsXML);
+}
+
+
+
+function dragGraph(g) {
+  g.addEventListener('mousedown',startMove);
+
+  function startMove(e) {
+    clearSelect();
+    var x=e.clientX,y=e.clientY;
+    g.addEventListener('mousemove',onMove);
+
+    document.addEventListener('mouseup',unbind,true);
+    window.addEventListener('mouseup',unbind,true);
+    function unbind(e) {
+      g.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',unbind,true);
+      window.removeEventListener('mouseup',unbind,true);
+    }
+
+    function onMove(e) {
+      var dx=x-e.clientX,dy=y-e.clientY;
+      if (dx>0 && g.scrollWidth-g.scrollLeft-g.clientWidth<2
+          || dx<0 && g.scrollLeft<1) {
+        document.documentElement.scrollLeft+=dx;
+        document.body.scrollLeft+=dx;
+      } else {
+        g.scrollLeft+=dx;
+      }
+      if (dy>0 && g.scrollHeight-g.scrollTop-g.clientHeight<2
+          || dy<0 && g.scrollTop<1) {
+        document.documentElement.scrollTop+=dy;
+        document.body.scrollTop+=dy;
+      } else {
+        g.scrollTop+=dy;
+      }
+      x=e.clientX;
+      y=e.clientY;
+    }
+  }
+}
+
+function getInnerText(ele) {
+  if (!ele) return '';
+  var node=ele.firstChild,results=[];
+  if (!node) return '';
+  do {
+    if (node.nodeType===document.TEXT_NODE) results.push(node.nodeValue);
+    else results.push(getInnerText(node));
+  } while (node=node.nextSibling);
+  return results.join('');
+}
+function setInnerText(ele,s) {
+  ele.innerHTML='';
+  var t=document.createTextNode('');
+  t.nodeValue=s;
+  ele.appendChild(t);
+  return s;
+}
+
+function clearSelect() {
+  if (window.getSelection) {
+    if (window.getSelection().empty) {  // Chrome
+      window.getSelection().empty();
+    } else if (window.getSelection().removeAllRanges) {  // Firefox
+      window.getSelection().removeAllRanges();
+    }
+  } else if (document.selection) {  // IE
+    document.selection.empty();
+  }
+}
+}
+</script>
+
+
+<footer>
+  <div class="normal">Created by <a href="https://jex.im/" target="_blank">Jex</a>.</div>
+  <div class="embed" ><a id="embedFooterLink" href="https://jex.im/regulex/" target="_blank">By Regulex</a></div>
+</footer>
+<script>
+if (params.embed || params.cmd==="export") {
+  var embedFooterLink = document.getElementById("embedFooterLink");
+  embedFooterLink.href = "https://jex.im/regulex/" + location.hash.replace(/\bembed=true\b/ig,"").replace(/\bcmd=export\b/ig,'');
+}
+</script>
+<a id="github" href="https://github.com/CJex/regulex" target="_blank" style="display:inline-block;width:149px;height:149px;position: absolute; top: 0; right: 0; border: 0;"><img style="width:149px;height:149px;position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "regulex",
+  "version": "0.0.5",
+  "description": "JavaScript Regular Expression Parser and Visualizer.",
+  "main": "index",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CJex/regulex.git"
+  },
+  "keywords": [
+    "Regular Expression",
+    "RegExp",
+    "Regulex"
+  ],
+  "dependencies":{
+    "amdefine":"~1.0.0"
+  },
+  "author": {
+    "name": "Jex"
+  },
+  "license": "MIT"
+}
