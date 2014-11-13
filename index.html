@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Regulex &colon; JavaScript Regular Expression Visualizer.</title>
+<style>
+body,body * {
+margin:0;
+padding:0;
+font-family: "DejaVu Sans Mono",monospace;
+}
+body {
+background: #303030;
+}
+h1 {
+font-size:3em;
+color:#40C0FF;
+margin:14px 0;
+padding:0 16px;
+padding-top:40px;
+padding-bottom: 30px;
+border-bottom:2px dashed grey;
+}
+h1 em{
+color:#BBE0E0;
+font-size:small;
+padding-left:2em;
+font-style: normal;
+font-weight:normal;
+}
+#inputCt,#errorBox {
+margin:8px 16px;
+}
+#inputCt p {
+background:#EEE;
+font-size:1.2em;
+line-height: 1.4em;
+color:#333;
+border:1px solid black;
+padding:4px;
+font-weight: bold;
+word-break:break-all;
+word-wrap:break-word;
+}
+#inputCt p.re .input {
+color:#3030C0;
+padding:0 2px;
+border:none;
+background:#EEE;
+font-size:1.2em;
+line-height: 1.4em;
+height:1.4em;
+font-weight: bold;
+word-break:break-all;
+word-wrap:break-word;
+margin:0;
+width:auto;
+}
+#inputCt p.re #input2 {
+display: none;
+}
+#errorBox {
+background:#EEE;
+font-size:1.2em;
+line-height: 1.4em;
+border:1px solid black;
+padding:4px;
+color:darkred;
+white-space: pre;
+word-wrap:normal;
+word-break:keep-all;
+display: none;
+overflow:auto;
+}
+#visualIt,#embedIt {
+font-size: 16px;
+line-height: 16px;
+display: inline-block;
+margin: 10px;
+font-size:larger;
+padding:12px;
+padding-bottom:10px;
+font-family: sans-serif;
+}
+#visualIt,#embedIt {
+color:#EEF;
+border:none;
+cursor:pointer;
+background: #40B0EF;
+background-image: linear-gradient(to bottom, #40B0EF,#3060A0);
+border-radius: 12px;
+text-decoration: none;
+}
+#visualIt:hover,#embedIt:hover {
+color:#FEF;
+background: #3CB0FD;
+background-image: linear-gradient(to bottom, #3CB0FD, #3498DF);
+text-decoration: none;
+}
+#graphCt {
+padding:4px;
+margin:0px 16px;
+border:1px solid black;
+background: #EEE;
+overflow: auto;
+cursor:move;
+-webkit-touch-callout: none;
+-webkit-user-select: none;
+-khtml-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+user-select: none;
+}
+#graphCt svg {
+display:block;
+margin:0 auto;
+}
+footer {
+text-align: center;
+border-top:1px solid #EEE;
+width:50%;
+min-width:400px;
+margin:1em auto;
+padding:10px;
+font-size:1.2em;
+}
+footer,footer a {
+color:#EEF;
+font-family: "Comic Sans MS";
+}
+body.embed {
+  background: #EEE;
+}
+body.embed,body.embed #graphCt {
+  margin:0;
+  padding:0;
+  border:none;
+}
+body.embed h1,
+body.embed #inputCt,
+body.embed #github {
+  display:none !important;
+}
+body.embed footer,body.embed footer a {
+  color:white;
+  font-size: 14px;
+  font-family: sans-serif;
+}
+body.embed footer {
+  display:block;
+  width:10em;
+  min-width:10em;
+  margin:0;
+  padding:2px;
+  background:rgb(75,0,130);
+  opacity: 0.9;
+  position:fixed;
+  right:0;
+  bottom:0;
+}
+body.embed{height:100%;}
+body.embed #graphCt {
+  height: 100vh;
+}
+</style>
+</head>
+<body>
+<script>
+var params=getParams();
+if (params.embed) {
+  document.body.className+= " embed";
+}
+
+function trim(s) {
+  return s.replace(/^\s+/,'').replace(/\s+$/,'');
+}
+
+function getParams() {
+  var params=location.hash;
+  if (!params || params.length<2) {
+    params={embed:false,re:""};
+  } else {
+    params=params.slice(2);
+    params=params.split("&").reduce(function (p,a) {
+      a=a.split("=");
+      p[a[0]]=a[1];
+      return p;
+    },{});
+    params.embed=params.embed==='true';
+    params.re=params.re?trim(decodeURIComponent(params.re)):'';
+  }
+  return params;
+}
+</script>
+<h1>Regulex<em>JavaScript Regular Expression Visualizer.</em></h1>
+<div id="inputCt">
+    <p class="re">/<span class="input" id="input1" contenteditable="true">(ab|c)*</span><input id="input2" class="input" value="" />/</p>
+    <button id="visualIt">Visualize</button>
+    <button id="embedIt">Embed On My Site!</button>
+</div>
+<p id="errorBox">Error Message</p>
+<div id="graphCt"></div>
+
+<!--script src="http://cdn.staticfile.org/require.js/2.1.15/require.min.js"></script-->
+<!--script src="http://libs.useso.com/js/require.js/2.1.11/require.min.js"></script-->
+
+<script src="src/libs/require.js" charset="utf-8"></script>
+
+<script type="text/javascript" charset="utf-8">
+function $(id) {return document.getElementById(id)}
+function $$(q) {return document.querySelector(q)}
+
+var raphael='src/libs/raphael';
+var visualize='src/visualize';
+var parse='src/parse';
+var Kit='src/Kit';
+/*
+var visualize='dest/visualize';
+var parse='dest/parse';
+var Kit='dest/Kit';
+//var raphael="http://cdn.staticfile.org/raphael/2.1.2/raphael-min.js";
+var raphael="http://libs.useso.com/js/raphael/2.1.2/raphael-min.js";
+*/
+require([raphael,visualize,parse,Kit],function (R,visualize,parse,K) {
+
+var paper = R('graphCt', 10, 10);
+var input=$('input1');
+var visualBtn=$('visualIt');
+var embedBtn=$('embedIt');
+var errorBox=$('errorBox');
+var getInputValue=function () {return setInnerText(input,trim(getInnerText(input)))};
+var setInputValue=function (v) {return setInnerText(input,trim(v))};
+
+try {input.contentEditable='plaintext-only'}
+catch(e) {
+  try {input.contentEditable='plaintext'}
+  catch(e) {fixInput()}
+}
+initListeners();
+dragGraph($('graphCt'));
+
+if (params.re) {
+  setInputValue(params.re);
+}
+
+visualIt(getInputValue());
+
+function visualIt(re) {
+  hideError();
+  var ret;
+  try {ret=parse(re)}
+  catch (e) {
+    if (e instanceof parse.RegexSyntaxError) {
+      showError(re,e);
+    } else throw e;
+    return false;
+  }
+  visualize(ret,paper);
+  return true;
+}
+
+function hideError() {
+  errorBox.style.display='none';
+}
+function showError(re,err) {
+  errorBox.style.display='block';
+  var msg=["Error:"+err.message,""];
+  if (typeof err.lastIndex==='number') {
+    msg.push(re);
+    msg.push(K.repeats('-',err.lastIndex)+"^");
+  }
+  setInnerText(errorBox,msg.join("\n"));
+}
+
+function initListeners() {
+  var LF='\n'.charCodeAt(0),CR='\r'.charCodeAt(0);
+  input.addEventListener('keydown',onEnter);
+  visualBtn.addEventListener('click',function () {
+    visualIt(getInputValue());
+  });
+  embedBtn.addEventListener('click',function () {
+    var src=location.href;
+    var i=src.indexOf('#');
+    src=i>0?src.slice(0,i):src;
+    var re=getInputValue();
+    if (!visualIt(re)) {
+      return false;
+    }
+    changeHash(re);
+    var html='<iframe src="'+src+'#!embed=true&re='+encodeURIComponent(re)+'"></iframe>'
+    window.prompt("Copy the html code:",html);
+  });
+
+  var manualHash=false;
+  function changeHash(re) {
+    manualHash=true;
+    location.hash="#!embed=false&re="+encodeURIComponent(params.re=re);
+    manualHash=false;
+  }
+
+  window.addEventListener('hashchange',function () {
+    if (manualHash) return;
+    var p=getParams();
+    if (p.re && p.re!==params.re) {
+      params.re=p.re;
+      setInputValue(p.re);
+      visualIt(p.re);
+    }
+  });
+  function onEnter(e) {
+    if (e.keyCode===LF || e.keyCode===CR) e.preventDefault();
+    else return;
+    var re=getInputValue();
+    visualIt(re) && changeHash(re);
+  }
+
+}
+
+function fixInput() {
+  var spanInput=input;
+  spanInput.style.display='none';
+  var spanValue=getInputValue();
+  input=$('input2');
+  input.value=spanValue;
+  input.style.display='inline-block';
+  setTimeout(function () {
+    fixInputWidth(input)
+  },100);
+  bindFixInput();
+  getInputValue=function () {
+    return input.value=trim(input.value);
+  };
+  setInputValue=function (v) {
+    return input.value=trim(v);
+  };
+}
+
+function bindFixInput() {
+  input.addEventListener('keyup',filterInput);
+  input.addEventListener('click',filterInput);
+  function filterInput(e) {
+    fixInputWidth(input);
+    input.removeEventListener('keyup',filterInput);
+    input.removeEventListener('click',filterInput);
+    setTimeout(function () {
+      input.addEventListener('keyup',filterInput);
+      input.addEventListener('click',filterInput);
+    },200);
+  }
+}
+
+
+
+function fixInputWidth(input) {
+  var maxw=input.parentNode.clientWidth-100;
+  var span=getTempSpan(),style=getComputedStyle(input);
+  span.style.fontSize=style.fontSize;
+  span.style.fontWeight=style.fontWeight;
+  span.innerHTML='';
+  span.appendChild(document.createTextNode(input.value))
+  if (span.clientWidth > maxw) {
+    input.style.width=maxw+'px';
+    return;
+  }
+  input.style.width=span.clientWidth+20+'px';
+
+}
+function getTempSpan() {
+  if (getTempSpan._span) return getTempSpan._span;
+  var span=document.createElement('span');
+  span.style.position='absolute';
+  span.style.left=0;
+  span.style.top=0;
+  span.style.visibility='hidden';
+  document.body.appendChild(span);
+  getTempSpan._span=span;
+  return span;
+}
+
+function dragGraph(g) {
+  g.addEventListener('mousedown',startMove);
+
+  function startMove(e) {
+    clearSelect();
+    var x=e.clientX,y=e.clientY;
+    g.addEventListener('mousemove',onMove);
+
+    document.addEventListener('mouseup',unbind,true);
+    window.addEventListener('mouseup',unbind,true);
+    function unbind(e) {
+      g.removeEventListener('mousemove',onMove);
+      document.removeEventListener('mouseup',unbind,true);
+      window.removeEventListener('mouseup',unbind,true);
+    }
+
+    function onMove(e) {
+      var dx=x-e.clientX,dy=y-e.clientY;
+      if (dx>0 && g.scrollWidth-g.scrollLeft-g.clientWidth<2
+          || dx<0 && g.scrollLeft<1) {
+        document.documentElement.scrollLeft+=dx;
+        document.body.scrollLeft+=dx;
+      } else {
+        g.scrollLeft+=dx;
+      }
+      if (dy>0 && g.scrollHeight-g.scrollTop-g.clientHeight<2
+          || dy<0 && g.scrollTop<1) {
+        document.documentElement.scrollTop+=dy;
+        document.body.scrollTop+=dy;
+      } else {
+        g.scrollTop+=dy;
+      }
+      x=e.clientX;
+      y=e.clientY;
+    }
+  }
+}
+
+function getInnerText(ele) {
+  if (!ele) return '';
+  var node=ele.firstChild,results=[];
+  if (!node) return '';
+  do {
+    if (node.nodeType===document.TEXT_NODE) results.push(node.nodeValue);
+    else results.push(getInnerText(node));
+  } while (node=node.nextSibling);
+  return results.join('');
+}
+function setInnerText(ele,s) {
+  ele.innerHTML='';
+  var t=document.createTextNode('');
+  t.nodeValue=s;
+  ele.appendChild(t);
+  return s;
+}
+
+function clearSelect() {
+  if (window.getSelection) {
+    if (window.getSelection().empty) {  // Chrome
+      window.getSelection().empty();
+    } else if (window.getSelection().removeAllRanges) {  // Firefox
+      window.getSelection().removeAllRanges();
+    }
+  } else if (document.selection) {  // IE
+    document.selection.empty();
+  }
+}
+});
+</script>
+
+<footer>Created by <a href="http://jex.im/" target="_blank">Jex</a>.</footer>
+<a id="github" href="https://github.com/JexCheng/regulex" target="_blank" style="display:inline-block;width:149px;height:149px;position: absolute; top: 0; right: 0; border: 0;"><img style="width:149px;height:149px;position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+</body>
+</html>

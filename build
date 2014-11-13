@@ -1,0 +1,6 @@
+#!/bin/bash
+mkdir dest;
+for i in src/*;do
+  if [ -d "$i" ];then continue;fi;
+  uglifyjs "$i" -mc -o dest/$(basename "$i");
+done;

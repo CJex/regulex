@@ -1,0 +1,5 @@
+#!/bin/bash
+
+for i in *.js;do
+  node "$i";
+done;
