@@ -536,6 +536,7 @@ var actions=(function _() {
       choice=stack._parentChoice;
       choice.branches.unshift(newStack);
       _set(newStack,'_parentChoice',choice);
+      _set(newStack,'_parentGroup',choice);
       newStack.groupCounter=stack.groupCounter; // keep track
       delete stack._parentChoice;
       delete stack.groupCounter;  // This stack is in choice.branches,so clean it
@@ -558,6 +559,7 @@ var actions=(function _() {
 
       newStack.groupCounter=stack.groupCounter;
       _set(newStack,'_parentChoice',choice);
+      _set(newStack,'_parentGroup',choice);
       choice.branches.unshift(newStack);
     }
     return newStack;
@@ -567,6 +569,7 @@ var actions=(function _() {
     if (stack._parentChoice) {
       var choice=stack._parentChoice;
       delete stack._parentChoice;
+      delete stack._parentGroup;
       delete stack.groupCounter;
       var parentStack=choice._parentStack;
       delete choice._parentStack;
