@@ -391,12 +391,29 @@ var plotNode={
     var charBgColor='LightSkyBlue',charTextColor='black',
         clsBgColor='Green',clsTextColor='white',
         rangeBgColor='teal',rangeTextColor='white',
-        boxColor=node.exclude?'Pink':'Khaki';
+        boxColor=node.exclude?'Pink':'Khaki',
+        labelColor=node.exclude?'#C00':'';
     var simple=onlyCharClass(node);
     if (simple) {
       var a=textRect(clsDesc[node.classes[0]],x,y,clsBgColor,clsTextColor);
       a.rect.r=5;
-      return a;
+      if (!node.exclude) {
+        return a;
+      } else {
+        var tl=textLabel(a.x+a.width/2,a.y,'None of:',labelColor);
+        var items=a.items;
+        items.push(tl.label);
+        var oldWidth=a.width;
+        var width=Math.max(tl.width,a.width);
+        var offsetX=(width-oldWidth)/2;//ajust label text
+        translate(items,offsetX,0);
+        return {
+          items:items,
+          width:width,height:a.height+tl.height,
+          x:Math.min(tl.x,a.x),y:tl.y,
+          lineInX:offsetX+a.x,lineOutX:offsetX+a.x+a.width
+        };
+      }
     }
     if (!node.chars && !node.ranges.length && !node.classes.length) {
       // It must be exclude charset here
@@ -471,7 +488,7 @@ var plotNode={
       items=items.concat(a.items);
       startY+=a.height+spacing;
     });
-    var tl=textLabel(rect.x+rect.width/2,rect.y,(node.exclude?'None':'One')+' of:');
+    var tl=textLabel(rect.x+rect.width/2,rect.y,(node.exclude?'None':'One')+' of:',labelColor);
     items.push(tl.label);
     var oldWidth=width;
     width=Math.max(tl.width,width);
@@ -640,7 +657,7 @@ function highlight(tree) {
           break;
         case CHARSET_NODE:
           var simple=onlyCharClass(node);
-          !simple && texts.push(text('['));
+          (!simple || node.exclude) && texts.push(text('['));
           if (node.exclude) texts.push(text('^',hlColorMap.charsetExclude));
           node.ranges.forEach(function (rg) {
             texts.push(text(K.toPrint(rg[0]+'-'+rg[1]),hlColorMap.charsetRange));
@@ -649,7 +666,7 @@ function highlight(tree) {
             texts.push(text("\\"+cls,hlColorMap.charsetClass));
           });
           texts.push(text(K.toPrint(node.chars),hlColorMap.charsetChars));
-          !simple && texts.push(text(']'));
+          (!simple || node.exclude) && texts.push(text(']'));
           break;
       }
     }
