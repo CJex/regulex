@@ -676,15 +676,25 @@ var actions=(function _() {
       last={type:BACKREF_NODE,indices:[i-1]};
       stack.unshift(last);
     }
-
-    if (n>cn || n==stack._parentGroup) {
+    var rn;
+    if (n>cn) {
       throw new RegexSyntaxError({
         type:'InvalidBackReference',lastIndex:i,astStack:stack,lastState:state,
-        message:
-        (n>cn?'Back reference number('+n+') greater than current groups count('+cn+').':'Recursive back reference in group ('+n+') itself.')
+        message:'Back reference number('+n+') greater than current groups count('+cn+').'
+      });
+    } else if (rn=_isRecursive(n,stack)) {
+      throw new RegexSyntaxError({
+        type:'InvalidBackReference',lastIndex:i,astStack:stack,lastState:state,
+        message:'Recursive back reference in group ('+rn+') itself.'
       });
     }
     last.num=n;
+
+    function _isRecursive(n,stack) {
+      if (!stack._parentGroup) return false;
+      if (stack._parentGroup.num==n) return n;
+      return _isRecursive(n,stack._parentGroup._parentStack);
+    }
   }
 
   //console.log(K.locals(_));
