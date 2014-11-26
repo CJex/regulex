@@ -677,7 +677,7 @@ var actions=(function _() {
       stack.unshift(last);
     }
 
-    if (n>cn || n==cn && stack._parentGroup) {
+    if (n>cn || n==stack._parentGroup) {
       throw new RegexSyntaxError({
         type:'InvalidBackReference',lastIndex:i,astStack:stack,lastState:state,
         message:
