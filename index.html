@@ -31,7 +31,7 @@ font-weight:normal;
 #inputCt,#errorBox {
 margin:8px 16px;
 }
-#inputCt p {
+#inputCt div.re {
 background:#EEE;
 font-size:1.2em;
 line-height: 1.4em;
@@ -42,7 +42,13 @@ font-weight: bold;
 word-break:break-all;
 word-wrap:break-word;
 }
-#inputCt p.re .input {
+#inputCt div.re table {
+border:none;
+padding:0;
+margin:0;
+width:100%;
+}
+#inputCt div.re .input {
 color:#3030C0;
 padding:0 2px;
 border:none;
@@ -56,8 +62,9 @@ word-wrap:break-word;
 margin:0;
 width:auto;
 }
-#inputCt p.re #input2 {
-display: none;
+#inputCt div.re #input {
+display:table;
+width:100%;
 }
 #errorBox {
 background:#EEE;
@@ -178,7 +185,7 @@ function trim(s) {
 function getParams() {
   var params=location.hash;
   if (!params || params.length<2) {
-    params={embed:false,re:""};
+    params={embed:false,re:"",highlight:true,flags:''};
   } else {
     params=params.slice(2);
     params=params.split("&").reduce(function (p,a) {
@@ -187,6 +194,8 @@ function getParams() {
       return p;
     },{});
     params.embed=params.embed==='true';
+    params.highlight=params.highlight==='true';
+    params.flags=params.flags || '';
     params.re=params.re?trim(decodeURIComponent(params.re)):'';
   }
   return params;
@@ -194,7 +203,18 @@ function getParams() {
 </script>
 <h1>Regulex<em>JavaScript Regular Expression Visualizer.</em></h1>
 <div id="inputCt">
-    <p class="re">/<span class="input" id="input1" contenteditable="true">(ab|c)*</span><input id="input2" class="input" value="" />/</p>
+    <div class="re">
+      <table>
+        <tr>
+          <td style="width:1em">/</td>
+          <td style="width:auto">
+            <input id="input" class="input" value="(a|b\d+)*c" />
+          </td>
+          <td style="width:1em">/</td>
+          <td style="width:3em"></td>
+        </tr>
+      </table>
+    </div>
     <button id="visualIt">Visualize</button>
     <button id="embedIt">Embed On My Site!</button>
 </div>
@@ -224,18 +244,17 @@ var raphael="http://libs.useso.com/js/raphael/2.1.2/raphael-min.js";
 require([raphael,visualize,parse,Kit],function (R,visualize,parse,K) {
 
 var paper = R('graphCt', 10, 10);
-var input=$('input1');
+var input=$('input');
+var inputCt=$('inputCt');
 var visualBtn=$('visualIt');
 var embedBtn=$('embedIt');
 var errorBox=$('errorBox');
-var getInputValue=function () {return setInnerText(input,trim(getInnerText(input)))};
-var setInputValue=function (v) {return setInnerText(input,trim(v))};
-
-try {input.contentEditable='plaintext-only'}
-catch(e) {
-  try {input.contentEditable='plaintext'}
-  catch(e) {fixInput()}
-}
+var getInputValue=function () {
+    return input.value=trim(input.value);
+};
+var setInputValue=function (v) {
+  return input.value=trim(v);
+};
 initListeners();
 dragGraph($('graphCt'));
 
@@ -308,73 +327,13 @@ function initListeners() {
     }
   });
   function onEnter(e) {
-    if (e.keyCode===LF || e.keyCode===CR) e.preventDefault();
-    else return;
+    if (e.keyCode===LF || e.keyCode===CR) {
+      e.preventDefault();
+      e.stopPropagation();
+    } else return;
     var re=getInputValue();
     visualIt(re) && changeHash(re);
   }
-
-}
-
-function fixInput() {
-  var spanInput=input;
-  spanInput.style.display='none';
-  var spanValue=getInputValue();
-  input=$('input2');
-  input.value=spanValue;
-  input.style.display='inline-block';
-  setTimeout(function () {
-    fixInputWidth(input)
-  },100);
-  bindFixInput();
-  getInputValue=function () {
-    return input.value=trim(input.value);
-  };
-  setInputValue=function (v) {
-    return input.value=trim(v);
-  };
-}
-
-function bindFixInput() {
-  input.addEventListener('keyup',filterInput);
-  input.addEventListener('click',filterInput);
-  function filterInput(e) {
-    fixInputWidth(input);
-    input.removeEventListener('keyup',filterInput);
-    input.removeEventListener('click',filterInput);
-    setTimeout(function () {
-      input.addEventListener('keyup',filterInput);
-      input.addEventListener('click',filterInput);
-    },200);
-  }
-}
-
-
-
-function fixInputWidth(input) {
-  var maxw=input.parentNode.clientWidth-100;
-  var span=getTempSpan(),style=getComputedStyle(input);
-  span.style.fontSize=style.fontSize;
-  span.style.fontWeight=style.fontWeight;
-  span.innerHTML='';
-  span.appendChild(document.createTextNode(input.value))
-  if (span.clientWidth > maxw) {
-    input.style.width=maxw+'px';
-    return;
-  }
-  input.style.width=span.clientWidth+20+'px';
-
-}
-function getTempSpan() {
-  if (getTempSpan._span) return getTempSpan._span;
-  var span=document.createElement('span');
-  span.style.position='absolute';
-  span.style.left=0;
-  span.style.top=0;
-  span.style.visibility='hidden';
-  document.body.appendChild(span);
-  getTempSpan._span=span;
-  return span;
 }
 
 function dragGraph(g) {

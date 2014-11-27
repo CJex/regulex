@@ -608,10 +608,12 @@ var hlColorMap={
   '?':'maroon',
   repeatNonGreedy:'#F61',
   defaults:'black',
+  charset:'navy'
+  /*
   charsetRange:'olive',
   charsetClass:'navy',
   charsetExclude:'red',
-  charsetChars:'#334'
+  charsetChars:'#334'*/
 };
 
 
@@ -644,7 +646,7 @@ function highlight(tree) {
       var color=hlColorMap[node.type] || hlColorMap.defaults;
       switch (node.type) {
         case EXACT_NODE:
-          texts.push(text(K.toPrint(node.chars),color));
+          texts.push(text(node.raw,color));
           break;
         case DOT_NODE:
           texts.push(text('.',color));
@@ -656,6 +658,7 @@ function highlight(tree) {
           texts.push(text(node.raw));
           break;
         case CHARSET_NODE:
+          /*
           var simple=onlyCharClass(node);
           (!simple || node.exclude) && texts.push(text('['));
           if (node.exclude) texts.push(text('^',hlColorMap.charsetExclude));
@@ -666,7 +669,8 @@ function highlight(tree) {
             texts.push(text("\\"+cls,hlColorMap.charsetClass));
           });
           texts.push(text(K.toPrint(node.chars),hlColorMap.charsetChars));
-          (!simple || node.exclude) && texts.push(text(']'));
+          (!simple || node.exclude) && texts.push(text(']'));*/
+          texts.push(text(node.raw,hlColorMap.charset));
           break;
       }
     }

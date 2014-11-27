@@ -162,7 +162,18 @@ var expectedFail = [
   'abc{42,13}'
 ].map(str);
 
-var re2ast =[{
+var re2ast =[{ raw: '\\\\{3}',
+  tree:
+   [ { type: 'exact',
+       repeat:
+        { min: 3,
+          max: 3,
+          nonGreedy: false },
+       chars: '\\',
+       indices: [ 0, 5 ],
+       raw: '\\\\{3}' } ],
+  groupCount: 0 }
+,{
   raw: 'ab+(1|0)?[a-z][^0-9]a\\nb\\rc\\td',
   groupCount: 1,
   tree: [{

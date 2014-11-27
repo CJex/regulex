@@ -205,6 +205,7 @@ function parse(re,_debug) {
             type:'UnexpectedChar',
             message:'Unexpected char!'
           }
+          ret.lastIndex++;
         }
     }
     if (error) {
@@ -372,7 +373,7 @@ var actions=(function _() {
   }
   function nullChar(stack,c,i) {
     c="\0";
-    actions.exact.apply(this,arguments);
+    exact(stack,c,i);
   }
   function assertBegin(stack,c,i) { //  /^/
     stack.unshift({
@@ -405,6 +406,7 @@ var actions=(function _() {
       stack.unshift({type:EXACT_NODE,indices:[i]});
     }
   }
+
   function repeatnComma(stack,c,i) { // /a{n,}/
     var last=stack[0];
     _set(last,'_commaIndex',i);
@@ -430,7 +432,7 @@ var actions=(function _() {
       }
       delete last._commaIndex;
     }
-    if (last.indices[0]===charEndIndex) { //  '[a-z]{1,3}'
+    if (last.indices[0]>=charEndIndex) {
       stack.shift();
     }
     _repeat(stack,min,max,charEndIndex,s);
@@ -676,16 +678,15 @@ var actions=(function _() {
       last={type:BACKREF_NODE,indices:[i-1]};
       stack.unshift(last);
     }
-    var rn;
     if (n>cn) {
       throw new RegexSyntaxError({
         type:'InvalidBackReference',lastIndex:i,astStack:stack,lastState:state,
         message:'Back reference number('+n+') greater than current groups count('+cn+').'
       });
-    } else if (rn=_isRecursive(n,stack)) {
+    } else if (_isRecursive(n,stack)) {
       throw new RegexSyntaxError({
         type:'InvalidBackReference',lastIndex:i,astStack:stack,lastState:state,
-        message:'Recursive back reference in group ('+rn+') itself.'
+        message:'Recursive back reference in group ('+n+') itself.'
       });
     }
     last.num=n;
