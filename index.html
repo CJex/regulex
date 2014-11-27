@@ -384,13 +384,13 @@ function setFlags(fg) {
 }
 
 function exportImage() {
-  var svg = graphCt.getElementsByTagName('svg')[0];
+  svg = graphCt.getElementsByTagName('svg')[0];
   var canvas = document.createElement( "canvas" );
   var ctx = canvas.getContext( "2d" );
   var img = new Image;
   img.setAttribute('src',svgDataURL(svg));
-  canvas.setAttribute('width',svg.clientWidth);
-  canvas.setAttribute('height',svg.clientHeight);
+  canvas.setAttribute('width',svg.clientWidth || parseInt(getComputedStyle(svg).width));
+  canvas.setAttribute('height',svg.clientHeight || parseInt(getComputedStyle(svg).height));
   img.onload=function () {
     ctx.drawImage( img, 0, 0 );
     location.href=canvas.toDataURL( "image/png" );
