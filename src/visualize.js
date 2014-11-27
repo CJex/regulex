@@ -32,6 +32,7 @@ function initTmpText(paper) {
 */
 function visualize(re,flags,paper) {
   paper.clear();
+  paper.setSize(0,0);
   initTmpText(paper);
   _multiLine=!!~flags.indexOf('m');
 
@@ -670,8 +671,9 @@ function highlight(tree,flags) {
           (!simple || node.exclude) && texts.push(text(']'));
           break;
         default:
-          var s=node.raw;
+          var s=node.raw || '';
           if (node.repeat) s=s.slice(0,node.repeat.beginIndex);
+          s=K.toPrint(s,true);
           texts.push(text(s,color));
       }
     }
