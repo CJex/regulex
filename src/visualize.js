@@ -32,20 +32,22 @@ function visualize(re,paper) {
   paper.clear();
   initTmpText(paper);
 
-  var texts=highlight(re.tree);
-  texts.unshift(text("RegExp:"));
+  //var texts=highlight(re.tree);
+  //texts.unshift(text("RegExp:"));
   var charSize=getCharSize(FONT_SIZE,'bold'),
       startX=PAPER_MARGIN,startY=charSize.height/2+PAPER_MARGIN,
-      width,height;
+      width=0,height=0;
+  /*
   width=texts.reduce(function(x,t) {
     t.x=x;
     t.y=startY;
     var w=t.text.length*charSize.width;
     return x+w;
-  },startX);
+  },startX);*/
   width+=PAPER_MARGIN;
-  height=charSize.height+PAPER_MARGIN*2;
-  texts=paper.add(texts);
+  //height=charSize.height+PAPER_MARGIN*2;
+  height=PAPER_MARGIN*2;
+  //texts=paper.add(texts);
   paper.setSize(width,charSize.height+PAPER_MARGIN*2);
 
   var ret=plot(re.tree,0,0);
@@ -608,12 +610,11 @@ var hlColorMap={
   '?':'maroon',
   repeatNonGreedy:'#F61',
   defaults:'black',
-  charset:'navy'
-  /*
+  charset:'navy',
   charsetRange:'olive',
   charsetClass:'navy',
   charsetExclude:'red',
-  charsetChars:'#334'*/
+  charsetChars:'#334'
 };
 
 
@@ -646,7 +647,7 @@ function highlight(tree) {
       var color=hlColorMap[node.type] || hlColorMap.defaults;
       switch (node.type) {
         case EXACT_NODE:
-          texts.push(text(node.raw,color));
+          texts.push(text(K.toPrint(node.chars),color));
           break;
         case DOT_NODE:
           texts.push(text('.',color));
@@ -658,7 +659,6 @@ function highlight(tree) {
           texts.push(text(node.raw));
           break;
         case CHARSET_NODE:
-          /*
           var simple=onlyCharClass(node);
           (!simple || node.exclude) && texts.push(text('['));
           if (node.exclude) texts.push(text('^',hlColorMap.charsetExclude));
@@ -669,8 +669,7 @@ function highlight(tree) {
             texts.push(text("\\"+cls,hlColorMap.charsetClass));
           });
           texts.push(text(K.toPrint(node.chars),hlColorMap.charsetChars));
-          (!simple || node.exclude) && texts.push(text(']'));*/
-          texts.push(text(node.raw,hlColorMap.charset));
+          (!simple || node.exclude) && texts.push(text(']'));
           break;
       }
     }
