@@ -348,6 +348,7 @@ var plotNode={
       lineInX:ret.lineInX+padding+offsetX,
       lineOutX:ret.lineOutX+padding+offsetX
     };
+    return ret;
 
     if (repeat.min===0) {//draw a skip path
       r=padding;
