@@ -66,6 +66,13 @@ width:auto;
 display:table;
 width:100%;
 }
+#inputCt label {
+  color:white;
+  cursor:pointer;
+}
+#inputCt label input {
+  margin-right:4px;
+}
 #errorBox {
 background:#EEE;
 font-size:1.2em;
@@ -194,7 +201,6 @@ function getParams() {
       return p;
     },{});
     params.embed=params.embed==='true';
-    params.highlight=params.highlight==='true';
     params.flags=params.flags || '';
     params.re=params.re?trim(decodeURIComponent(params.re)):'';
   }
@@ -211,12 +217,15 @@ function getParams() {
             <input id="input" class="input" value="(a|b\d+)*c" />
           </td>
           <td style="width:1em">/</td>
-          <td style="width:3em"></td>
+          <td style="width:3em" id="flagBox"></td>
         </tr>
       </table>
     </div>
     <button id="visualIt">Visualize</button>
     <button id="embedIt">Embed On My Site!</button>
+    <label><input type="checkbox" name="flag" value="i" />IgnoreCase</label>
+    <label><input type="checkbox" name="flag" value="m" />Multiline</label>
+    <label><input type="checkbox" name="flag" value="g" />GlobalMatch</label>
 </div>
 <p id="errorBox">Error Message</p>
 <div id="graphCt"></div>
@@ -249,22 +258,31 @@ var inputCt=$('inputCt');
 var visualBtn=$('visualIt');
 var embedBtn=$('embedIt');
 var errorBox=$('errorBox');
+var flags=document.getElementsByName('flag');
+var flagBox=$('flagBox');
 var getInputValue=function () {
     return input.value=trim(input.value);
 };
 var setInputValue=function (v) {
   return input.value=trim(v);
 };
-initListeners();
-dragGraph($('graphCt'));
-
+if (params.flags) {
+  setFlags(params.flags);
+}
 if (params.re) {
   setInputValue(params.re);
 }
 
-visualIt(getInputValue());
+initListeners();
+dragGraph($('graphCt'));
 
-function visualIt(re) {
+
+
+visualIt();
+
+function visualIt() {
+  var re=getInputValue();
+  if (!re) return false;
   hideError();
   var ret;
   try {ret=parse(re)}
@@ -274,7 +292,7 @@ function visualIt(re) {
     } else throw e;
     return false;
   }
-  visualize(ret,paper);
+  visualize(ret,getFlags(),paper);
   return true;
 }
 
@@ -298,42 +316,67 @@ function initListeners() {
     visualIt(getInputValue());
   });
   embedBtn.addEventListener('click',function () {
+    if (!visualIt()) return false;
     var src=location.href;
     var i=src.indexOf('#');
     src=i>0?src.slice(0,i):src;
+    changeHash();
     var re=getInputValue();
-    if (!visualIt(re)) {
-      return false;
-    }
-    changeHash(re);
-    var html='<iframe src="'+src+'#!embed=true&re='+encodeURIComponent(re)+'"></iframe>'
+    var html='<iframe src="'+src+'#!embed=true&flags='+getFlags()+'&re='+encodeURIComponent(re)+'"></iframe>'
     window.prompt("Copy the html code:",html);
   });
 
-  var manualHash=false;
-  function changeHash(re) {
-    manualHash=true;
-    location.hash="#!embed=false&re="+encodeURIComponent(params.re=re);
-    manualHash=false;
+  //var manualHash=false;
+  function changeHash() {
+    var re=getInputValue();
+    var flags=getFlags();
+    //manualHash=true;
+    location.hash="#!embed=false&flags="+flags+"&re="+encodeURIComponent(params.re=re);
+    //manualHash=false;
   }
-
+  /*
   window.addEventListener('hashchange',function () {
     if (manualHash) return;
     var p=getParams();
     if (p.re && p.re!==params.re) {
       params.re=p.re;
       setInputValue(p.re);
-      visualIt(p.re);
+      visualIt();
     }
-  });
+  });*/
+  for (var i=0,l=flags.length;i<l;i++) {
+    flags[i].addEventListener('change',onChangeFlags);
+  }
+
+  function onChangeFlags(e) {
+    setInnerText(flagBox,getFlags());
+    visualIt();
+    changeHash();
+  }
   function onEnter(e) {
     if (e.keyCode===LF || e.keyCode===CR) {
       e.preventDefault();
       e.stopPropagation();
     } else return;
-    var re=getInputValue();
-    visualIt(re) && changeHash(re);
+    visualIt();
+    changeHash();
   }
+}
+
+function getFlags() {
+  var fg='';
+  for (var i=0,l=flags.length;i<l;i++) {
+    if (flags[i].checked) fg+=flags[i].value;
+  }
+  return fg;
+}
+
+function setFlags(fg) {
+  for (var i=0,l=fg.length;i<l;i++) {
+    if (~fg.indexOf(flags[i].value)) flags[i].checked=true;
+    else flags[i].checked=false;
+  }
+  setInnerText(flagBox,fg);
 }
 
 function dragGraph(g) {

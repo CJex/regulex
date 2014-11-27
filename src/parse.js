@@ -455,6 +455,7 @@ var actions=(function _() {
     } else {
       last.repeat=repeat;
     }
+    _set(repeat,'beginIndex',charEndIndex-stack[0].indices[0]);
   }
   function repeatNonGreedy(stack) { stack[0].repeat.nonGreedy=true}
   function normalEscape(stack,c,i) {

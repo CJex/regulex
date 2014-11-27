@@ -327,14 +327,12 @@ var printEscapeMap={
 // Convert string to printable,replace all control chars and unicode to hex escape
 function toPrint(s) {
   var ctrl=/[\x00-\x1F\x7F-\x9F]/,unicode=/[\u009F-\uFFFF]/;
-  if (ctrl.test(s) || unicode.test(s)) {
-    s=s.split('').map(function (c) {
-      if (printEscapeMap.hasOwnProperty(c)) return printEscapeMap[c];
-      else if (ctrl.test(c)) return '\\x'+ord(c).toString(16).toUpperCase();
-      else if (unicode.test(c)) return '\\u'+('00'+ord(c).toString(16)).slice(-4);
-      return c;
-    }).join('');
-  }
+  s=s.split('').map(function (c) {
+    if (printEscapeMap.hasOwnProperty(c)) return printEscapeMap[c];
+    else if (ctrl.test(c)) return '\\x'+ord(c).toString(16).toUpperCase();
+    //else if (unicode.test(c)) return '\\u'+('00'+ord(c).toString(16)).slice(-4);
+    return c;
+  }).join('');
   return s;
 }
 //flatten two-dimensional array to one-dimension

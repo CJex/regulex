@@ -5,6 +5,8 @@ parse.exportConstants();
 var FONT_SIZE=16,LABEL_FONT_SIZE=14,PATH_LEN=16,
     FONT_FAMILY='DejaVu Sans Mono,monospace';
 
+var _multiLine=false; /* global flag quick work*/
+
 var PAPER_MARGIN=10;
 
 var _charSizeCache={},_tmpText;
@@ -28,29 +30,33 @@ function initTmpText(paper) {
 /**
 @param {AST} re AST returned by `parse`
 */
-function visualize(re,paper) {
+function visualize(re,flags,paper) {
   paper.clear();
   initTmpText(paper);
+  _multiLine=!!~flags.indexOf('m');
 
-  //var texts=highlight(re.tree);
-  //texts.unshift(text("RegExp:"));
+  var texts=highlight(re.tree,flags);
+
+  texts.unshift(text('/',hlColorMap.delimiter));
+  texts.unshift(text("RegExp: "));
+  texts.push(text('/',hlColorMap.delimiter));
+  if (flags) texts.push(text(flags,hlColorMap.flags));
   var charSize=getCharSize(FONT_SIZE,'bold'),
       startX=PAPER_MARGIN,startY=charSize.height/2+PAPER_MARGIN,
       width=0,height=0;
-  /*
+
   width=texts.reduce(function(x,t) {
     t.x=x;
     t.y=startY;
     var w=t.text.length*charSize.width;
     return x+w;
-  },startX);*/
+  },startX);
   width+=PAPER_MARGIN;
-  //height=charSize.height+PAPER_MARGIN*2;
-  height=PAPER_MARGIN*2;
-  //texts=paper.add(texts);
+  height=charSize.height+PAPER_MARGIN*2;
+  texts=paper.add(texts);
   paper.setSize(width,charSize.height+PAPER_MARGIN*2);
 
-  var ret=plot(re.tree,0,0);
+  var ret=plot(re.tree,flags,0,0);
 
   height=Math.max(ret.height+3*PAPER_MARGIN+charSize.height,height);
   width=Math.max(ret.width+2*PAPER_MARGIN,width);
@@ -62,7 +68,7 @@ function visualize(re,paper) {
 
 
 
-function plot(tree,x,y) {
+function plot(tree,flags,x,y) {
   tree.unshift({type:'startPoint'});
   tree.push({type:'endPoint'});
   return plotTree(tree,x,y);
@@ -541,6 +547,9 @@ var plotNode={
     };
     var conf,nat=node.assertionType,txt=nat.replace('Assert','')+'!';
     if (conf=simpleAssert[nat]) {
+      if (_multiLine && (nat==='AssertBegin' || nat==='AssertEnd'))  {
+        txt='Line'+txt;
+      }
       return textRect(txt,x,y,conf.bg,conf.fg);
     }
 
@@ -587,6 +596,8 @@ var plotNode={
 
 
 var hlColorMap={
+  delimiter:'Indigo',
+  flags:'darkgreen',
   exact:'#334',
   dot:'darkblue',
   backref:'teal',
@@ -610,18 +621,17 @@ var hlColorMap={
   '?':'maroon',
   repeatNonGreedy:'#F61',
   defaults:'black',
-  charset:'navy',
   charsetRange:'olive',
   charsetClass:'navy',
   charsetExclude:'red',
-  charsetChars:'#334'
+  charsetChars:'#534'
 };
 
 
 /**
 @param {AST.tree} re AST.tree return by `parse`
 */
-function highlight(tree) {
+function highlight(tree,flags) {
   var texts=[];
   tree.forEach(function (node) {
     if (node.sub) {
@@ -646,31 +656,23 @@ function highlight(tree) {
     } else {
       var color=hlColorMap[node.type] || hlColorMap.defaults;
       switch (node.type) {
-        case EXACT_NODE:
-          texts.push(text(K.toPrint(node.chars),color));
-          break;
-        case DOT_NODE:
-          texts.push(text('.',color));
-          break;
-        case BACKREF_NODE:
-          texts.push(text("\\"+node.num,color));
-          break;
-        case ASSERT_NODE:
-          texts.push(text(node.raw));
-          break;
         case CHARSET_NODE:
           var simple=onlyCharClass(node);
           (!simple || node.exclude) && texts.push(text('['));
           if (node.exclude) texts.push(text('^',hlColorMap.charsetExclude));
           node.ranges.forEach(function (rg) {
-            texts.push(text(K.toPrint(rg[0]+'-'+rg[1]),hlColorMap.charsetRange));
+            texts.push(text(_charsetEscape(rg[0]+'-'+rg[1]),hlColorMap.charsetRange));
           });
           node.classes.forEach(function (cls) {
             texts.push(text("\\"+cls,hlColorMap.charsetClass));
           });
-          texts.push(text(K.toPrint(node.chars),hlColorMap.charsetChars));
+          texts.push(text(_charsetEscape(node.chars),hlColorMap.charsetChars));
           (!simple || node.exclude) && texts.push(text(']'));
           break;
+        default:
+          var s=node.raw;
+          if (node.repeat) s=s.slice(0,node.repeat.beginIndex);
+          texts.push(text(s,color));
       }
     }
     if (node.repeat) {
@@ -694,6 +696,11 @@ function highlight(tree) {
     }
   });
   return texts;
+}
+
+function _charsetEscape(s) {
+  s=K.toPrint(s);
+  return s.replace(/\[/g,'\\[').replace(/\]/g,'\\]');
 }
 
 function text(s,color) {
