@@ -286,8 +286,8 @@ var plotNode={
     return a;
   },
   repeat:function (node,x,y) {
-    var padding=8,LABEL_MARGIN=4;
-    var repeat=node.repeat,txt="Repeat ";
+    var padding=10,LABEL_MARGIN=4;
+    var repeat=node.repeat,txt="";
     /*if (repeat.min===0 && !node._branched) {
       node._branched=true;
       return plotNode.choice({type:CHOICE_NODE,branches:[[{type:EMPTY_NODE}],[node]]},x,y);
@@ -321,17 +321,7 @@ var plotNode={
             'V',py+r,
             'Q',x+rectW,py,ret.lineOutX+padding,py
           ],
-      _translate:function (x,y) {
-        var p=this.path;
-        p[1]+=x;p[2]+=y;
-        p[4]+=x;p[5]+=y;p[6]+=x;p[7]+=y;
-        p[9]+=y;
-        p[11]+=x;p[12]+=y;p[13]+=x;p[14]+=y;
-        p[16]+=x;
-        p[18]+=x;p[19]+=y;p[20]+=x;p[21]+=y;
-        p[23]+=y;
-        p[25]+=x;p[26]+=y;p[27]+=x;p[28]+=y;
-      },
+      _translate:_curveTranslate,
       stroke:'maroon',
       'stroke-width':2
     };
@@ -351,7 +341,7 @@ var plotNode={
     translate(ret.items,padding+offsetX,0);
     ret.items.unshift(p);
     ret.items.push(tl.label);
-    return {
+    ret={
       items:ret.items,
       width:width,height:ret.height+padding+tl.height+LABEL_MARGIN,
       x:offsetX+padding+x,y:ret.y,
@@ -359,8 +349,54 @@ var plotNode={
       lineOutX:ret.lineOutX+padding+offsetX
     };
 
+    if (repeat.min===0) {//draw a skip path
+      r=padding;
+      translate(ret.items,r,0);
+      rectH=y-ret.y+padding,rectW+=padding*2;
+      py=y;
+      var px=ret.x-r;
+      p={
+        type:'path',
+        path:['M',px,py,
+              'Q',px+r,py,px+r,py-r,
+              'V',py-rectH+r,
+              'Q',px+r,py-rectH,px+r*2,py-rectH,
+              'H',px+rectW-r*2,
+              'Q',px+rectW-r,py-rectH,px+rectW-r,py-rectH+r,
+              'V',py-r,
+              'Q',px+rectW-r,py,px+rectW,py
+            ],
+        _translate:_curveTranslate,
+        stroke:'#333',
+        'stroke-width':2
+      };
+      ret.items.push(p);
+      ret.lineInX+=r;
+      ret.lineOutX+=r;
+      ret.width+=r;
+      ret.height+=r;
+      ret.y-=r;
+      ret.x+=r;
+
+
+      return ret;
+    } else {
+      return ret;
+    }
+
     function _plural(n) {
       return n+ ((n<2)? " time.":" times.");
+    }
+    function _curveTranslate(x,y) {
+      var p=this.path;
+      p[1]+=x;p[2]+=y;
+      p[4]+=x;p[5]+=y;p[6]+=x;p[7]+=y;
+      p[9]+=y;
+      p[11]+=x;p[12]+=y;p[13]+=x;p[14]+=y;
+      p[16]+=x;
+      p[18]+=x;p[19]+=y;p[20]+=x;p[21]+=y;
+      p[23]+=y;
+      p[25]+=x;p[26]+=y;p[27]+=x;p[28]+=y;
     }
   },
   choice:function (node,x,y) {
