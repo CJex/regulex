@@ -86,17 +86,15 @@ word-break:keep-all;
 display: none;
 overflow:auto;
 }
-#visualIt,#embedIt {
+#visualIt,#embedIt,#exportIt {
 font-size: 16px;
 line-height: 16px;
 display: inline-block;
 margin: 10px;
-font-size:larger;
+margin-left:0;
 padding:12px;
 padding-bottom:10px;
 font-family: sans-serif;
-}
-#visualIt,#embedIt {
 color:#EEF;
 border:none;
 cursor:pointer;
@@ -105,7 +103,7 @@ background-image: linear-gradient(to bottom, #40B0EF,#3060A0);
 border-radius: 12px;
 text-decoration: none;
 }
-#visualIt:hover,#embedIt:hover {
+#visualIt:hover,#embedIt:hover,#exportIt:hover {
 color:#FEF;
 background: #3CB0FD;
 background-image: linear-gradient(to bottom, #3CB0FD, #3498DF);
@@ -222,6 +220,7 @@ function getParams() {
       </table>
     </div>
     <button id="visualIt">Visualize</button>
+    <button id="exportIt">Export Image</button>
     <button id="embedIt">Embed On My Site!</button>
     <label><input type="checkbox" name="flag" value="i" />IgnoreCase</label>
     <label><input type="checkbox" name="flag" value="m" />Multiline</label>
@@ -257,6 +256,7 @@ var input=$('input');
 var inputCt=$('inputCt');
 var visualBtn=$('visualIt');
 var embedBtn=$('embedIt');
+var exportBtn=$('exportIt');
 var errorBox=$('errorBox');
 var flags=document.getElementsByName('flag');
 var flagBox=$('flagBox');
@@ -326,6 +326,10 @@ function initListeners() {
     window.prompt("Copy the html code:",html);
   });
 
+  exportBtn.addEventListener('click',function () {
+    exportImage();
+  });
+
   //var manualHash=false;
   function changeHash() {
     var re=getInputValue();
@@ -378,6 +382,27 @@ function setFlags(fg) {
   }
   setInnerText(flagBox,fg);
 }
+
+function exportImage() {
+  var svg = graphCt.getElementsByTagName('svg')[0];
+  var canvas = document.createElement( "canvas" );
+  var ctx = canvas.getContext( "2d" );
+  var img = new Image;
+  img.setAttribute('src',svgDataURL(svg));
+  canvas.setAttribute('width',svg.clientWidth);
+  canvas.setAttribute('height',svg.clientHeight);
+  img.onload=function () {
+    ctx.drawImage( img, 0, 0 );
+    location.href=canvas.toDataURL( "image/png" );
+  };
+}
+
+function svgDataURL(svg) {
+  var svgAsXML = (new XMLSerializer).serializeToString(svg);
+  return "data:image/svg+xml," + encodeURIComponent(svgAsXML);
+}
+
+
 
 function dragGraph(g) {
   g.addEventListener('mousedown',startMove);
@@ -448,6 +473,7 @@ function clearSelect() {
 }
 });
 </script>
+
 
 <footer>Created by <a href="http://jex.im/" target="_blank">Jex</a>.</footer>
 <a id="github" href="https://github.com/JexCheng/regulex" target="_blank" style="display:inline-block;width:149px;height:149px;position: absolute; top: 0; right: 0; border: 0;"><img style="width:149px;height:149px;position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
