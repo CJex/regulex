@@ -313,14 +313,14 @@ var plotNode={
     width=rectW; height+=padding;
     var p={
       type:'path',
-      path:['M',ret.lineInX+padding,y,
+      path:['M',ret.x+padding,y,
             'Q',x,y,x,y+r,
             'V',y+rectH-r,
             'Q',x,y+rectH,x+r,y+rectH,
             'H',x+rectW-r,
             'Q',x+rectW,y+rectH,x+rectW,y+rectH-r,
             'V',y+r,
-            'Q',x+rectW,y,ret.lineOutX+padding,y
+            'Q',x+rectW,y,ret.x+ret.width+padding,y
           ],
       _translate:_curveTranslate,
       stroke:'maroon',
