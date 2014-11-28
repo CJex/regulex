@@ -57,7 +57,7 @@ function visualize(re,flags,paper) {
   texts=paper.add(texts);
   paper.setSize(width,charSize.height+PAPER_MARGIN*2);
 
-  var ret=plot(re.tree,flags,0,0);
+  var ret=plot(re.tree,0,0);
 
   height=Math.max(ret.height+3*PAPER_MARGIN+charSize.height,height);
   width=Math.max(ret.width+2*PAPER_MARGIN,width);
@@ -69,7 +69,7 @@ function visualize(re,flags,paper) {
 
 
 
-function plot(tree,flags,x,y) {
+function plot(tree,x,y) {
   tree.unshift({type:'startPoint'});
   tree.push({type:'endPoint'});
   return plotTree(tree,x,y);
@@ -194,7 +194,7 @@ function hline(x,y,destX) {
 function smoothLine(fromX,fromY,toX,toY) {
   var radius=10,p,_translate;
   var signX=fromX>toX?-1:1,signY=fromY>toY?-1:1;
-  if (Math.abs(fromY-toY)<radius*2 || Math.abs(fromX-toX)<radius*2) {
+  if (Math.abs(fromY-toY)<radius*1.5 /*|| Math.abs(fromX-toX)<radius*2*/) {
     p=['M',fromX,fromY,
        'C',fromX+Math.min(Math.abs(toX-fromX)/2,radius)*signX,fromY,
        toX-(toX-fromX)/2,toY,
@@ -210,7 +210,7 @@ function smoothLine(fromX,fromY,toX,toY) {
     p=[
       'M',fromX,fromY,
       'Q',fromX+radius*signX,fromY,fromX+radius*signX,fromY+radius*signY,
-      'V',toY-radius*signY,
+      'V',Math.abs(fromY-toY)<radius*2 ? fromY+radius*signY : (toY-radius*signY),
       'Q',fromX+radius*signX,toY,fromX+radius*signX*2,toY,
       'H',toX
     ];
@@ -287,13 +287,14 @@ var plotNode={
   },
   repeat:function (node,x,y) {
     var padding=10,LABEL_MARGIN=4;
-    var repeat=node.repeat,txt="";
+    var repeat=node.repeat,txt="",items=[];
     /*if (repeat.min===0 && !node._branched) {
       node._branched=true;
       return plotNode.choice({type:CHOICE_NODE,branches:[[{type:EMPTY_NODE}],[node]]},x,y);
     }*/
 
     var ret=plotNode[node.type](node,x,y);
+    var width=ret.width,height=ret.height;
 
     if (repeat.min===repeat.max) {
       txt+=_plural(repeat.min);
@@ -305,85 +306,74 @@ var plotNode={
         txt+=" or more times.";
       }
     }
-
-    var r=padding;
+    var offsetX=padding;
+    // draw repeat rect box
+    var r=padding;//radius
     var rectW=ret.width+padding*2,rectH=ret.y+ret.height+padding-y;
-
-    var py=y;
+    width=rectW; height+=padding;
     var p={
       type:'path',
-      path:['M',ret.lineInX+padding,py,
-            'Q',x,py,x,py+r,
-            'V',py+rectH-r,
-            'Q',x,py+rectH,x+r,py+rectH,
+      path:['M',ret.lineInX+padding,y,
+            'Q',x,y,x,y+r,
+            'V',y+rectH-r,
+            'Q',x,y+rectH,x+r,y+rectH,
             'H',x+rectW-r,
-            'Q',x+rectW,py+rectH,x+rectW,py+rectH-r,
-            'V',py+r,
-            'Q',x+rectW,py,ret.lineOutX+padding,py
+            'Q',x+rectW,y+rectH,x+rectW,y+rectH-r,
+            'V',y+r,
+            'Q',x+rectW,y,ret.lineOutX+padding,y
           ],
       _translate:_curveTranslate,
       stroke:'maroon',
       'stroke-width':2
     };
-
     if (repeat.nonGreedy) {
       txt+="(NonGreedy!)";
       p.stroke="Brown";
       p['stroke-dasharray']="-";
     }
-
-    var tl=textLabel(x+rectW/2,y,txt);
-    translate([tl.label],0,rectH+tl.height+LABEL_MARGIN); //bottom  label
-
-    var width=Math.max(tl.width,rectW);
-    var offsetX=(width-rectW)/2;
-    if (offsetX) translate([p,tl.label],offsetX,0);
-    translate(ret.items,padding+offsetX,0);
-    ret.items.unshift(p);
-    ret.items.push(tl.label);
-    ret={
-      items:ret.items,
-      width:width,height:ret.height+padding+tl.height+LABEL_MARGIN,
-      x:offsetX+padding+x,y:ret.y,
-      lineInX:ret.lineInX+padding+offsetX,
-      lineOutX:ret.lineOutX+padding+offsetX
-    };
-    return ret;
-
+    items.push(p);
+    var skipPath;
     if (repeat.min===0) {//draw a skip path
-      r=padding;
-      translate(ret.items,r,0);
-      rectH=y-ret.y+padding,rectW+=padding*2;
-      py=y;
-      var px=ret.x-r;
-      p={
+      var skipRectH=y-ret.y+padding,skipRectW=rectW+padding*2;
+      offsetX+=padding;
+      width=skipRectW; height+=padding;
+      skipPath={
         type:'path',
-        path:['M',px,py,
-              'Q',px+r,py,px+r,py-r,
-              'V',py-rectH+r,
-              'Q',px+r,py-rectH,px+r*2,py-rectH,
-              'H',px+rectW-r*2,
-              'Q',px+rectW-r,py-rectH,px+rectW-r,py-rectH+r,
-              'V',py-r,
-              'Q',px+rectW-r,py,px+rectW,py
+        path:['M',x,y,
+              'Q',x+r,y,x+r,y-r,
+              'V',y-skipRectH+r,
+              'Q',x+r,y-skipRectH,x+r*2,y-skipRectH,
+              'H',x+skipRectW-r*2,
+              'Q',x+skipRectW-r,y-skipRectH,x+skipRectW-r,y-skipRectH+r,
+              'V',y-r,
+              'Q',x+skipRectW-r,y,x+skipRectW,y
             ],
         _translate:_curveTranslate,
         stroke:'#333',
         'stroke-width':2
       };
-      ret.items.push(p);
-      ret.lineInX+=r;
-      ret.lineOutX+=r;
-      ret.width+=r;
-      ret.height+=r;
-      ret.y-=r;
-      ret.x+=r;
-
-
-      return ret;
-    } else {
-      return ret;
+      translate([p],padding,0);
+      items.push(skipPath);
     }
+
+    var tl=textLabel(x+width/2,y,txt);
+    translate([tl.label],0,rectH+tl.height+LABEL_MARGIN); //bottom  label
+    items.push(tl.label);
+    height+=LABEL_MARGIN+tl.height;
+    var labelOffsetX=(Math.max(tl.width,width)-width)/2;
+    if (labelOffsetX) translate(items,labelOffsetX,0);
+    width=Math.max(tl.width,width);
+    offsetX+=labelOffsetX;
+    translate(ret.items,offsetX,0);
+    items=items.concat(ret.items);
+    return {
+      items:items,
+      width:width,height:height,
+      x:x,y:ret.y-(skipPath?padding:0),
+      lineInX:ret.lineInX+offsetX,
+      lineOutX:ret.lineOutX+offsetX
+    };
+
 
     function _plural(n) {
       return n+ ((n<2)? " time.":" times.");
@@ -411,15 +401,30 @@ var plotNode={
     height+=(branches.length-1)*spacing+paddingY*2;
     width+=marginX*2;
 
-    var centerX=x+width/2,dy=y-height/2+paddingY,lineOutX=x+width,
-        items=[];
+    var centerX=x+width/2,dy=y-height/2+paddingY,// destY
+        lineOutX=x+width,items=[];
     branches.forEach(function (a) {
-      var dx=centerX-a.width/2;
+      var dx=centerX-a.width/2; // destX
       translate(a.items,dx-a.x,dy-a.y);
+      items=items.concat(a.items);
+      /*
       var p1=smoothLine(x,y,dx-a.x+a.lineInX,y+dy-a.y);
       var p2=smoothLine(lineOutX,y,a.lineOutX+dx-a.x,y+dy-a.y);
       items=items.concat(a.items);
+      items.push(p1,p2);*/
+       // current a.y based on y(=0),its middle at y=0
+      var lineY=y+dy-a.y;
+      var p1=smoothLine(x,y,x+marginX,lineY);
+      var p2=smoothLine(lineOutX,y,x+width-marginX,lineY);
       items.push(p1,p2);
+      if (x+marginX!==dx-a.x+a.lineInX) {
+        items.push(hline(x+marginX,lineY,dx-a.x+a.lineInX));
+      }
+      if (a.lineOutX+dx-a.x!==x+width-marginX) {
+        items.push(hline(a.lineOutX+dx-a.x,lineY,x+width-marginX));
+      }
+
+      a.x=dx;a.y=dy;
       dy+=a.height+spacing;
     });
 
