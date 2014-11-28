@@ -24,7 +24,9 @@ function getCharSize(fontSize,fontBold) {
 }
 
 function initTmpText(paper) {
-  _tmpText=_tmpText || paper.text(-1000,-1000,"XgfTlM|.q\nXgfTlM|.q").attr('font-family',FONT_FAMILY);
+  _tmpText=paper.text(
+       -1000,-1000,"XgfTlM|.q\nXgfTlM|.q"
+  ).attr({'font-family':FONT_FAMILY,'font-size':FONT_SIZE});
 }
 
 /**
@@ -78,7 +80,7 @@ function plot(tree,x,y) {
 function translate(items,dx,dy) {
   items.forEach(function (t) {
     if (t._translate) t._translate(dx,dy);
-    t.x+=dx;t.y+=dy;
+    else {t.x+=dx;t.y+=dy;}
   });
 }
 
@@ -102,9 +104,7 @@ function plotTree(tree,x,y) {
     bottom=Math.max(bottom,ret.y+ret.height);
     items=items.concat(ret.items);
   });
-
   height=bottom-top;
-
   results.reduce(function (a,b) {
     width+=PATH_LEN;
     var p=hline(a.lineOutX,y,b.lineInX);
@@ -136,6 +136,7 @@ function textRect(s,x,y,bgColor,textColor) {
     x:x+w/2,y:y,
     text:s,
     'font-size':FONT_SIZE,
+    'font-family':FONT_FAMILY,
     fill:textColor || 'black'
   };
   return {
@@ -165,6 +166,7 @@ function textLabel(x,y,s,color) {// x is center x ,y is bottom y
     x:x,y:y-textHeight/2-margin,
     text:s,
     'font-size':LABEL_FONT_SIZE,
+    'font-family':FONT_FAMILY,
     fill:color || '#444'
   };
   return {
@@ -288,57 +290,67 @@ var plotNode={
   repeat:function (node,x,y) {
     var padding=10,LABEL_MARGIN=4;
     var repeat=node.repeat,txt="",items=[];
+    var NonGreedySkipPathColor='darkgreen';
     /*if (repeat.min===0 && !node._branched) {
       node._branched=true;
       return plotNode.choice({type:CHOICE_NODE,branches:[[{type:EMPTY_NODE}],[node]]},x,y);
     }*/
+    if (repeat.min===repeat.max && repeat.min===0) {
+      return plotNode.empty(null,x,y); // so why allow /a{0}/ ?
+    }
 
     var ret=plotNode[node.type](node,x,y);
     var width=ret.width,height=ret.height;
 
-    if (repeat.min===repeat.max) {
+    if (repeat.min===repeat.max && repeat.min===1) {
+      return ret; // if someone write /a{1}/
+    } else if (repeat.min===repeat.max) {
       txt+=_plural(repeat.min);
     } else {
       txt+=repeat.min;
       if (isFinite(repeat.max)) {
         txt+= (repeat.max-repeat.min > 1 ? " to " : " or ") +_plural(repeat.max);
       } else {
-        txt+=" or more times.";
+        txt+=" or more times";
       }
     }
-    var offsetX=padding;
-    // draw repeat rect box
-    var r=padding;//radius
-    var rectW=ret.width+padding*2,rectH=ret.y+ret.height+padding-y;
-    width=rectW; height+=padding;
-    var p;
-    if (repeat.max > 1) {
-        p={
-          type:'path',
-          path:['M',ret.x+padding,y,
-                'Q',x,y,x,y+r,
-                'V',y+rectH-r,
-                'Q',x,y+rectH,x+r,y+rectH,
-                'H',x+rectW-r,
-                'Q',x+rectW,y+rectH,x+rectW,y+rectH-r,
-                'V',y+r,
-                'Q',x+rectW,y,ret.x+ret.width+padding,y
-              ],
-          _translate:_curveTranslate,
-          stroke:'maroon',
-          'stroke-width':2
-        };
-        if (repeat.nonGreedy) {
-          txt+="(NonGreedy!)";
-          p.stroke="Brown";
-          p['stroke-dasharray']="-";
-        }
-        items.push(p);
+
+    var offsetX=padding,offsetY=0,r=padding,rectH=ret.y+ret.height-y,rectW=padding*2+ret.width;
+    width=rectW;
+    var p; // repeat rect box path
+    if (repeat.max!==1) {// draw repeat rect box
+      rectH+=padding;
+      height+=padding;
+      p={
+        type:'path',
+        path:['M',ret.x+padding,y,
+              'Q',x,y,x,y+r,
+              'V',y+rectH-r,
+              'Q',x,y+rectH,x+r,y+rectH,
+              'H',x+rectW-r,
+              'Q',x+rectW,y+rectH,x+rectW,y+rectH-r,
+              'V',y+r,
+              'Q',x+rectW,y,ret.x+ret.width+padding,y
+            ],
+        _translate:_curveTranslate,
+        stroke:'maroon',
+        'stroke-width':2
+      };
+      if (repeat.nonGreedy) {
+        //txt+="(NonGreedy!)";
+        p.stroke="Brown";
+        p['stroke-dasharray']="-";
+      }
+      items.push(p);
+    } else { // so completely remove label when /a?/ but not /a??/
+      txt=false;
     }
+
     var skipPath;
     if (repeat.min===0) {//draw a skip path
       var skipRectH=y-ret.y+padding,skipRectW=rectW+padding*2;
       offsetX+=padding;
+      offsetY=-padding-2; //tweak,stroke-width is 2
       width=skipRectW; height+=padding;
       skipPath={
         type:'path',
@@ -352,36 +364,36 @@ var plotNode={
               'Q',x+skipRectW-r,y,x+skipRectW,y
             ],
         _translate:_curveTranslate,
-        stroke:'#333',
+        stroke:repeat.nonGreedy? NonGreedySkipPathColor:'#333',
         'stroke-width':2
       };
-      if (p) {
-        translate([p],padding,0);
-      }
+      if (p) translate([p],padding,0);
       items.push(skipPath);
     }
 
-    var tl=textLabel(x+width/2,y,txt);
-    translate([tl.label],0,rectH+tl.height+LABEL_MARGIN); //bottom  label
-    items.push(tl.label);
-    height+=LABEL_MARGIN+tl.height;
-    var labelOffsetX=(Math.max(tl.width,width)-width)/2;
-    if (labelOffsetX) translate(items,labelOffsetX,0);
-    width=Math.max(tl.width,width);
-    offsetX+=labelOffsetX;
+    if (txt) {
+      var tl=textLabel(x+width/2,y,txt);
+      translate([tl.label],0,rectH+tl.height+LABEL_MARGIN); //bottom  label
+      items.push(tl.label);
+      height+=LABEL_MARGIN+tl.height;
+      var labelOffsetX=(Math.max(tl.width,width)-width)/2;
+      if (labelOffsetX) translate(items,labelOffsetX,0);
+      width=Math.max(tl.width,width);
+      offsetX+=labelOffsetX;
+    }
+
     translate(ret.items,offsetX,0);
     items=items.concat(ret.items);
     return {
       items:items,
       width:width,height:height,
-      x:x,y:ret.y-(skipPath?padding:0),
+      x:x,y:ret.y+offsetY,
       lineInX:ret.lineInX+offsetX,
       lineOutX:ret.lineOutX+offsetX
     };
 
-
     function _plural(n) {
-      return n+ ((n<2)? " time.":" times.");
+      return n+ ((n<2)? " time":" times");
     }
     function _curveTranslate(x,y) {
       var p=this.path;
