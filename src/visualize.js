@@ -311,27 +311,30 @@ var plotNode={
     var r=padding;//radius
     var rectW=ret.width+padding*2,rectH=ret.y+ret.height+padding-y;
     width=rectW; height+=padding;
-    var p={
-      type:'path',
-      path:['M',ret.x+padding,y,
-            'Q',x,y,x,y+r,
-            'V',y+rectH-r,
-            'Q',x,y+rectH,x+r,y+rectH,
-            'H',x+rectW-r,
-            'Q',x+rectW,y+rectH,x+rectW,y+rectH-r,
-            'V',y+r,
-            'Q',x+rectW,y,ret.x+ret.width+padding,y
-          ],
-      _translate:_curveTranslate,
-      stroke:'maroon',
-      'stroke-width':2
-    };
-    if (repeat.nonGreedy) {
-      txt+="(NonGreedy!)";
-      p.stroke="Brown";
-      p['stroke-dasharray']="-";
+    var p;
+    if (repeat.max > 1) {
+        p={
+          type:'path',
+          path:['M',ret.x+padding,y,
+                'Q',x,y,x,y+r,
+                'V',y+rectH-r,
+                'Q',x,y+rectH,x+r,y+rectH,
+                'H',x+rectW-r,
+                'Q',x+rectW,y+rectH,x+rectW,y+rectH-r,
+                'V',y+r,
+                'Q',x+rectW,y,ret.x+ret.width+padding,y
+              ],
+          _translate:_curveTranslate,
+          stroke:'maroon',
+          'stroke-width':2
+        };
+        if (repeat.nonGreedy) {
+          txt+="(NonGreedy!)";
+          p.stroke="Brown";
+          p['stroke-dasharray']="-";
+        }
+        items.push(p);
     }
-    items.push(p);
     var skipPath;
     if (repeat.min===0) {//draw a skip path
       var skipRectH=y-ret.y+padding,skipRectW=rectW+padding*2;
@@ -352,7 +355,9 @@ var plotNode={
         stroke:'#333',
         'stroke-width':2
       };
-      translate([p],padding,0);
+      if (p) {
+        translate([p],padding,0);
+      }
       items.push(skipPath);
     }
 
