@@ -36,7 +36,7 @@ function visualize(re,flags,paper) {
   initTmpText(paper);
   _multiLine=!!~flags.indexOf('m');
 
-  var texts=highlight(re.tree,flags);
+  var texts=highlight(re.tree);
 
   texts.unshift(text('/',hlColorMap.delimiter));
   texts.unshift(text("RegExp: "));
@@ -674,7 +674,7 @@ var hlColorMap={
 /**
 @param {AST.tree} re AST.tree return by `parse`
 */
-function highlight(tree,flags) {
+function highlight(tree) {
   var texts=[];
   tree.forEach(function (node) {
     if (node.sub) {
