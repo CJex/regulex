@@ -344,7 +344,8 @@ function log() {
   if (isBrowser) {
     Function.prototype.apply.apply(console.log,[console,a]);
   } else {//Assume it is Node.js
-    var util=require('util');
+    var s='util';
+    var util=require(s); // skip require.js
     a.forEach(function (x) {
       console.log(util.inspect(x,{
         showHidden:false,customInspect:true,
