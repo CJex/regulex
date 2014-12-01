@@ -286,6 +286,7 @@ visualIt();
 function visualIt() {
   var re=getInputValue();
   if (!re) return false;
+  changeHash();
   hideError();
   var ret;
   try {ret=parse(re)}
@@ -312,11 +313,17 @@ function showError(re,err) {
   setInnerText(errorBox,msg.join("\n"));
 }
 
+function changeHash() {
+  var re=getInputValue();
+  var flags=getFlags();
+  location.hash="#!embed=false&flags="+flags+"&re="+encodeURIComponent(params.re=re);
+}
+
 function initListeners() {
   var LF='\n'.charCodeAt(0),CR='\r'.charCodeAt(0);
   input.addEventListener('keydown',onEnter);
   visualBtn.addEventListener('click',function () {
-    visualIt(getInputValue());
+    visualIt();
   });
   embedBtn.addEventListener('click',function () {
     if (!visualIt()) return false;
@@ -333,14 +340,7 @@ function initListeners() {
     exportImage();
   });
 
-  //var manualHash=false;
-  function changeHash() {
-    var re=getInputValue();
-    var flags=getFlags();
-    //manualHash=true;
-    location.hash="#!embed=false&flags="+flags+"&re="+encodeURIComponent(params.re=re);
-    //manualHash=false;
-  }
+
   /*
   window.addEventListener('hashchange',function () {
     if (manualHash) return;
@@ -366,7 +366,6 @@ function initListeners() {
       e.stopPropagation();
     } else return;
     visualIt();
-    changeHash();
   }
 }
 
