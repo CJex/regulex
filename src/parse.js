@@ -149,7 +149,7 @@ function parse(re,_debug) {
   var parser=getNFAParser();
 
   var ret,stack,lastState;
-  ret=parser.input(re);
+  ret=parser.input(re,0,_debug);
   stack=ret.stack;
   stack=actions.endChoice(stack); // e.g. /a|b/
   lastState=ret.lastState;

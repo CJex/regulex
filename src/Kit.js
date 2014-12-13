@@ -256,7 +256,13 @@ Example: ^b-y, ['by'] to ["\0a","z\uffff"]
 @return Sorted disjoint ranges
 */
 function negate(ranges /*:[Range rg]*/) {
-  var MIN_CHAR="\u0000",MAX_CHAR="\uffff";
+  var MIN_CHAR="\u0000",
+      // work around UglifyJS's bug
+      // it will convert unicode escape to raw char
+      // that will cause error in IE
+      // because IE recognize "\uFFFF" in source code as "\uFFFD"
+      MAX_CHAR=JSON.parse('"\\uFFFF"');
+
   ranges=classify(ranges).ranges;
   var negated=[];
   if (!ranges.length) return negated;
@@ -278,7 +284,7 @@ Character classes like "\w\s" are not supported!
 @param {String} charset  Valid regex charset [^a-z0-9_] input as "^a-z0-9_".
 @return {[Range]} return sorted disjoint ranges
 */
-function parseCharset(charset/*:String*/) {
+function parseCharset(charset /*:String*/) {
   charset=charset.split('');
   var chars=[],ranges=[],
       exclude = charset[0]==='^' && charset.length > 1 && charset.shift();

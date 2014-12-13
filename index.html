@@ -235,9 +235,12 @@ function getParams() {
 <!--script src="http://cdn.staticfile.org/require.js/2.1.15/require.min.js"></script-->
 <!--script src="http://libs.useso.com/js/require.js/2.1.11/require.min.js"></script-->
 
-<script src="src/libs/require.js" charset="utf-8"></script>
-
 <script type="text/javascript" charset="utf-8">
+params.debug=true;
+/*
+//var raphael="http://cdn.staticfile.org/raphael/2.1.2/raphael-min.js";
+var raphael="http://libs.useso.com/js/raphael/2.1.2/raphael-min.js";
+*/
 function $(id) {return document.getElementById(id)}
 function $$(q) {return document.querySelector(q)}
 
@@ -245,15 +248,26 @@ var raphael='src/libs/raphael';
 var visualize='src/visualize';
 var parse='src/parse';
 var Kit='src/Kit';
-/*
-var visualize='dest/visualize';
-var parse='dest/parse';
-var Kit='dest/Kit';
-//var raphael="http://cdn.staticfile.org/raphael/2.1.2/raphael-min.js";
-var raphael="http://libs.useso.com/js/raphael/2.1.2/raphael-min.js";
-*/
-require([raphael,visualize,parse,Kit],function (R,visualize,parse,K) {
 
+if (params.debug) {
+  document.write('<script src="src/libs/require.js" charset="utf-8"><'+'/script>');
+  window.addEventListener('DOMContentLoaded',function () {
+    require([raphael,visualize,parse,Kit],init);
+  });
+} else {
+  document.write('<script src="dest/regulex.js" charset="utf-8"><'+'/script>');
+  window.addEventListener('DOMContentLoaded',function () {
+    raphael=require('regulex').Raphael;
+    parse = require('regulex').parse;
+    visualize = require('regulex').visualize;
+    Kit=require('regulex').Kit;
+    init(raphael,visualize,parse,Kit);
+  });
+
+}
+
+
+function init(R,visualize,parse,K) {
 var paper = R('graphCt', 10, 10);
 var input=$('input');
 var inputCt=$('inputCt');
@@ -473,7 +487,7 @@ function clearSelect() {
     document.selection.empty();
   }
 }
-});
+}
 </script>
 
 

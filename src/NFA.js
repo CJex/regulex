@@ -57,8 +57,7 @@ An automaton used to recognize triples:{
   input:Function
 }
 */
-function NFA(a,_debug) {
-  this._debug=_debug;
+function NFA(a) {
   a=a.compact?structure(a):a;
   var accepts={},i,trans=a.trans,
       // FMap={toState:Function}
@@ -173,7 +172,7 @@ return {
     lastState:String
   }
 */
-function input(s,startIndex) {
+function input(s,startIndex,_debug) {
   startIndex=startIndex || 0;
   var _this=this;
   return _input(s,startIndex,'start',[],startIndex-1);
@@ -210,7 +209,7 @@ function input(s,startIndex) {
         }
         if (t.action) stack=t.action(stack,c,startIndex,fromState,s) || stack;
         lastIndex=t.eMove?lastIndex:startIndex;
-        this._debug && K.log(c+":"+fromState+">"+t.to);
+        _debug && K.log(c+":"+fromState+">"+t.to);
         if (j===n-1) {
           startIndex+=advanceIndex;
           fromState=t.to;
