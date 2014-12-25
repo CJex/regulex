@@ -278,7 +278,7 @@ var errorBox=$('errorBox');
 var flags=document.getElementsByName('flag');
 var flagBox=$('flagBox');
 var getInputValue=function () {
-    return input.value=trim(input.value);
+    return trim(input.value);
 };
 var setInputValue=function (v) {
   return input.value=trim(v);
@@ -297,16 +297,17 @@ dragGraph($('graphCt'));
 
 visualIt();
 
-function visualIt() {
+function visualIt(skipError) {
   var re=getInputValue();
-  if (!re) return false;
   changeHash();
   hideError();
   var ret;
   try {ret=parse(re)}
   catch (e) {
     if (e instanceof parse.RegexSyntaxError) {
-      showError(re,e);
+      if (!skipError) {
+        showError(re,e);
+      }
     } else throw e;
     return false;
   }
@@ -336,6 +337,7 @@ function changeHash() {
 function initListeners() {
   var LF='\n'.charCodeAt(0),CR='\r'.charCodeAt(0);
   input.addEventListener('keydown',onEnter);
+  input.addEventListener('keyup',onKeyup);
   input.addEventListener('paste',function (evt) {
     var content=trim(evt.clipboardData.getData('text'));
     if (content[0]==='/' && /\/[img]*$/.test(content)) {
@@ -385,12 +387,26 @@ function initListeners() {
     visualIt();
     changeHash();
   }
+
+
+  var onKeyupTid;
+  function onKeyup(e) {
+    if (e.keyCode===LF || e.keyCode===CR) {
+      return true;
+    }
+    console.log(e.keyCode);
+    clearTimeout(onKeyupTid);
+    onKeyupTid=setTimeout(function () {
+      var skipError=true;
+      visualIt(skipError);
+    },100);
+  }
   function onEnter(e) {
     if (e.keyCode===LF || e.keyCode===CR) {
       e.preventDefault();
       e.stopPropagation();
-    } else return;
-    visualIt();
+      visualIt();
+    }
   }
 }
 

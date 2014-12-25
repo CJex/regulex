@@ -261,7 +261,7 @@ function negate(ranges /*:[Range rg]*/) {
       // it will convert unicode escape to raw char
       // that will cause error in IE
       // because IE recognize "\uFFFF" in source code as "\uFFFD"
-      MAX_CHAR=JSON.parse('"\\uFFFF"');
+      MAX_CHAR=String.fromCharCode(0xFFFF);
 
   ranges=classify(ranges).ranges;
   var negated=[];

@@ -262,7 +262,7 @@ var plotNode={
     return point(x,y,"r(0.5,0.5)#FFF-#000")
   },
   empty:function (node,x,y) {
-    var len=6;
+    var len=10;
     var l=hline(x,y,x+len);
     return {
       items:[l],
@@ -278,16 +278,17 @@ var plotNode={
     var bgColor='DarkGreen',textColor='white';
     var a=textRect('AnyCharExceptNewLine',x,y,bgColor,textColor);
     a.rect.r=10;
-    a.rect.tip="Any char except CR LF."
+    a.rect.tip="AnyChar except CR LF"
     return a;
   },
   backref:function (node,x,y) {
     var bgColor='navy',textColor='white';
-    var a=textRect('Backref group #'+node.num,x,y,bgColor,textColor);
+    var a=textRect('Backref #'+node.num,x,y,bgColor,textColor);
     a.rect.r=8;
     return a;
   },
   repeat:function (node,x,y) {
+    if (elideOK(node)) return plotNode.empty(null,x,y);
     var padding=10,LABEL_MARGIN=4;
     var repeat=node.repeat,txt="",items=[];
     var NonGreedySkipPathColor='darkgreen';
@@ -408,6 +409,7 @@ var plotNode={
     }
   },
   choice:function (node,x,y) {
+    if (elideOK(node)) return plotNode.empty(null,x,y);
     var marginX=20,spacing=6,paddingY=4,height=0,width=0;
     var branches=node.branches.map(function (branch) {
       var ret=plotTree(branch,x,y);
@@ -570,6 +572,7 @@ var plotNode={
     };
   },
   group:function (node,x,y) {
+    if (elideOK(node)) return plotNode.empty(null,x,y);
     var padding=10,lineColor='silver',strokeWidth=2;
     var sub=plotTree(node.sub,x,y);
     if (node.num) {
@@ -591,7 +594,7 @@ var plotNode={
       return {
         items:items,
         width:width,
-        height:rectH+tl.height,
+        height:rectH+tl.height+4, // 4 is margin
         x:x,y:tl.y,
         lineInX:offsetX+sub.lineInX+padding,lineOutX:offsetX+sub.lineOutX+padding
       };
@@ -617,12 +620,12 @@ var plotNode={
     if (nat===AssertLookahead) {
       lineColor="CornflowerBlue";
       fg="darkgreen";
-      txt="If followed by:";
+      txt="Followed by:";
     } else if (nat===AssertNegativeLookahead) {
       lineColor="#F63";
       fg="Purple";
       //txt="Negative\nLookahead!"; // break line
-      txt="If not followed by:";
+      txt="Not followed by:";
     }
 
     var sub=plotNode.group(node,x,y);
@@ -653,7 +656,27 @@ var plotNode={
   }
 };
 
+function elideOK(a) {
+  if (Array.isArray(a)) {//stack
+    var stack=a;
+    for (var i=0;i<stack.length;i++) {
+      if (!elideOK(stack[i])) return false;
+    }
+    return true;
+  }
+  var node=a;
+  if (node.type===EMPTY_NODE) return true;
 
+  if (node.type===GROUP_NODE && node.num===undefined) {
+    return elideOK(node.sub);
+  }
+
+  if (node.type===CHOICE_NODE) {
+
+    return elideOK(node.branches);
+  }
+
+}
 
 var hlColorMap={
   delimiter:'Indigo',

@@ -834,7 +834,7 @@ var config={
     ['groupQualify>groupQualifiedStart',':',actions.groupNonCapture],//group non-capturing
     ['groupQualify>groupQualifiedStart','=',actions.groupToAssertion],//group positive lookahead
     ['groupQualify>groupQualifiedStart','!',actions.groupToAssertion],//group negative lookahead
-    [(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'groupStart,groupQualifiedStart,begin,end,exact,repeat1,repeat0,repeat01,repeatn,repeatNonGreedy,choice>exact',')',actions.groupEnd],//group end
+    [(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+',groupStart,groupQualifiedStart,begin,end,exact,repeat1,repeat0,repeat01,repeatn,repeatNonGreedy,choice>exact',')',actions.groupEnd],//group end
 
     //choice
     ['start,begin,end,groupStart,groupQualifiedStart,exact,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>choice','|', actions.choice],
