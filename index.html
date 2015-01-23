@@ -394,7 +394,6 @@ function initListeners() {
     if (e.keyCode===LF || e.keyCode===CR) {
       return true;
     }
-    console.log(e.keyCode);
     clearTimeout(onKeyupTid);
     onKeyupTid=setTimeout(function () {
       var skipError=true;

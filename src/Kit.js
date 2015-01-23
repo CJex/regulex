@@ -161,7 +161,9 @@ function classify(ranges) {
   ranges=ranges.map(function (c) {return (!c[1])?c+c:c;});
   var i,j,k,l,r,n;
   ranges=sortUnique(ranges); n=ranges.length;
-  var singleMap={},headMap={},tailMap={},head,tail;
+  var singleMap=Object.create(null),
+      headMap=Object.create(null),
+      tailMap=Object.create(null),head,tail;
   for (i=0;i<n;i++) {
     r=ranges[i]; tail=r[1]; headMap[r[0]]=true; tailMap[tail]=true;
     for (j=i;j<n;j++) {
@@ -174,32 +176,31 @@ function classify(ranges) {
   }
   var chars=sortUnique(ranges.join('').split('')),
       results=Object.keys(singleMap),
-      c=chars[0],tmpMap={},map={};
+      c=chars[0],tmpMap=Object.create(null),map=Object.create(null);
   for (i=0;i<n;i++) tmpMap[ranges[i]]=[];
-  if (singleMap.hasOwnProperty(c)) {
+  if (singleMap[c]) {
     for (i=0;i<n;i++) {
       r=ranges[i];
       if (r[0]===c) tmpMap[r].push(c);
       else if (r[0]>c) break;
     }
   }
-  for (i=0,k=0,l=chars.length-1;i<l;i++) {
+  for (i=0,l=chars.length-1;i<l;i++) {
     head=chars[i]; tail=chars[i+1];
-    if (tailMap.hasOwnProperty(head)) head=succ(head);
-    if (headMap.hasOwnProperty(tail)) tail=pred(tail);
+    if (tailMap[head]) head=succ(head);
+    if (headMap[tail]) tail=pred(tail);
     if (head<=tail) {
       c=head===tail?head:(head+tail);
-      for (j=k;j<n;j++) {
+      for (j=0;j<n;j++) {
         r=ranges[j];
         if (r[0]>tail) break;
         if (r[0]<=head && tail<=r[1]) tmpMap[r].push(c),results.push(c);
       }
     }
     head=chars[i]; tail=chars[i+1]; //keep insert order,push single char later
-    if (singleMap.hasOwnProperty(tail)) {
-      for (j=k;j<n;j++) {
+    if (singleMap[tail]) {
+      for (j=0;j<n;j++) {
         r=ranges[j];
-        if (r[1]<head) k++; //skip lesser ranges
         if (r[0]>tail) break;
         if (r[0]<=tail && tail<=r[1]) tmpMap[r].push(tail);
       }
