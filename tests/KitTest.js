@@ -28,6 +28,10 @@ function testCoalesce() {
   ranges=K.classify(K.negate(['Aa','az'])).ranges;
   results=K.coalesce(ranges);
   assert.deepEqual(results,K.negate(['Az']));
+
+  ranges=K.classify(['ab','cd','xy']).ranges;
+  results=K.coalesce(ranges);
+  assert.deepEqual(results,['ad','x','y']);
 }
 
 function testIdUnique() {

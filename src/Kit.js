@@ -319,7 +319,15 @@ function coalesce(ranges) {
     results.push(b);
     return b;
   });
-  return results;
+  return results.reduce(function (results,range) {
+    if (range.length===2 && range[0]===pred(range[1])) {
+      results.push(range[0]);
+      results.push(range[1]);
+    } else {
+      results.push(range);
+    }
+    return results;
+  },[]);
 }
 
 function chr(n) {return String.fromCharCode(n)}
