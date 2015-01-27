@@ -238,11 +238,11 @@ var NFABuilders=(function _() {
         from:from,to:to,charset:false,
         assert:function _aBackref(stack,c,i,state,s) {
           // static invalid backref will throw parse error
-          // dynamic invalid backref will treat as literal decimal,not OctEscape
-          // e.g. /(?:(\d)|-)\8/ will match "-8"
+          // dynamic invalid backref will treat as empty string
+          // e.g. /(?:(\d)|-)\1/ will match "-"
           var match=getGroupContent(stack,groupNum,s);
           if (match===undefined) {
-            match=groupNum;
+            match="";
           }
           if (s.slice(i,i+match.length)===match) {
             return match.length;
