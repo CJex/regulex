@@ -2,12 +2,13 @@ if (typeof define !== 'function') var define = require('amdefine')(module);
 define(['./Kit','./parse'],function (K,parse) {
 parse.exportConstants();
 
-var FONT_SIZE=16,LABEL_FONT_SIZE=14,PATH_LEN=16,
-    FONT_FAMILY='DejaVu Sans Mono,monospace';
+var Properties = {FONT_SIZE:16,
+		  LABEL_FONT_SIZE:14,
+		  PATH_LEN:16,
+		  FONT_FAMILY:'DejaVu Sans Mono,monospace',
+		  PAPER_MARGIN:10};
 
 var _multiLine=false; /* global flag quick work*/
-
-var PAPER_MARGIN=10;
 
 var _charSizeCache={},_tmpText;
 function getCharSize(fontSize,fontBold) {
@@ -26,13 +27,22 @@ function getCharSize(fontSize,fontBold) {
 function initTmpText(paper) {
   _tmpText=paper.text(
        -1000,-1000,"XgfTlM|.q\nXgfTlM|.q"
-  ).attr({'font-family':FONT_FAMILY,'font-size':FONT_SIZE});
+  ).attr({'font-family':Properties.FONT_FAMILY,'font-size':Properties.FONT_SIZE});
 }
 
 /**
 @param {AST} re AST returned by `parse`
 */
-function visualize(re,flags,paper) {
+function visualize(re,flags,paper,properties) {
+  /* Override visualization/display properties if the 'properties'
+     parameter has been provided. */
+  if (properties) {
+    for (var prop in properties) {
+      if (properties.hasOwnProperty(prop))
+        Properties[prop] = properties[prop];
+    }
+  }
+    
   paper.clear();
   paper.setSize(0,0);
   initTmpText(paper);
@@ -44,8 +54,8 @@ function visualize(re,flags,paper) {
   texts.unshift(text("RegExp: "));
   texts.push(text('/',hlColorMap.delimiter));
   if (flags) texts.push(text(flags,hlColorMap.flags));
-  var charSize=getCharSize(FONT_SIZE,'bold'),
-      startX=PAPER_MARGIN,startY=charSize.height/2+PAPER_MARGIN,
+  var charSize=getCharSize(Properties.FONT_SIZE,'bold'),
+      startX=Properties.PAPER_MARGIN,startY=charSize.height/2+Properties.PAPER_MARGIN,
       width=0,height=0;
 
   width=texts.reduce(function(x,t) {
@@ -54,18 +64,18 @@ function visualize(re,flags,paper) {
     var w=t.text.length*charSize.width;
     return x+w;
   },startX);
-  width+=PAPER_MARGIN;
-  height=charSize.height+PAPER_MARGIN*2;
+  width+=Properties.PAPER_MARGIN;
+  height=charSize.height+Properties.PAPER_MARGIN*2;
   texts=paper.add(texts);
-  paper.setSize(width,charSize.height+PAPER_MARGIN*2);
+  paper.setSize(width,charSize.height+Properties.PAPER_MARGIN*2);
 
   var ret=plot(re.tree,0,0);
 
-  height=Math.max(ret.height+3*PAPER_MARGIN+charSize.height,height);
-  width=Math.max(ret.width+2*PAPER_MARGIN,width);
+  height=Math.max(ret.height+3*Properties.PAPER_MARGIN+charSize.height,height);
+  width=Math.max(ret.width+2*Properties.PAPER_MARGIN,width);
 
   paper.setSize(width,height);
-  translate(ret.items,PAPER_MARGIN,PAPER_MARGIN*2+charSize.height-ret.y);
+  translate(ret.items,Properties.PAPER_MARGIN,Properties.PAPER_MARGIN*2+charSize.height-ret.y);
   paper.add(ret.items);
 }
 
@@ -98,7 +108,7 @@ function plotTree(tree,x,y) {
       ret=plotNode[node.type](node,fromX,y);
     }
     results.push(ret);
-    fromX+=ret.width+PATH_LEN;
+    fromX+=ret.width+Properties.PATH_LEN;
     width+=ret.width;
     top=Math.min(top,ret.y);
     bottom=Math.max(bottom,ret.y+ret.height);
@@ -106,7 +116,7 @@ function plotTree(tree,x,y) {
   });
   height=bottom-top;
   results.reduce(function (a,b) {
-    width+=PATH_LEN;
+    width+=Properties.PATH_LEN;
     var p=hline(a.lineOutX,y,b.lineInX);
     items.push(p);
     return b;
@@ -122,7 +132,7 @@ function plotTree(tree,x,y) {
 function textRect(s,x,y,bgColor,textColor) {
   s=K.toPrint(s);
   var padding=6;
-  var charSize=getCharSize(FONT_SIZE);
+  var charSize=getCharSize(Properties.FONT_SIZE);
   var tw=s.length*charSize.width,h=charSize.height+padding*2,w=tw+padding*2;
   var rect={
     type:'rect',
@@ -135,8 +145,8 @@ function textRect(s,x,y,bgColor,textColor) {
     type:'text',
     x:x+w/2,y:y,
     text:s,
-    'font-size':FONT_SIZE,
-    'font-family':FONT_FAMILY,
+    'font-size':Properties.FONT_SIZE,
+    'font-family':Properties.FONT_FAMILY,
     fill:textColor || 'black'
   };
   return {
@@ -150,7 +160,7 @@ function textRect(s,x,y,bgColor,textColor) {
 
 // return LabelObject {lable:Element,x,y,width,height}
 function textLabel(x,y,s,color) {// x is center x ,y is bottom y
-  var charSize=getCharSize(LABEL_FONT_SIZE);
+  var charSize=getCharSize(Properties.LABEL_FONT_SIZE);
   var lines=s.split("\n");
   var textHeight=lines.length*charSize.height;
   var textWidth;
@@ -165,8 +175,8 @@ function textLabel(x,y,s,color) {// x is center x ,y is bottom y
     type:'text',
     x:x,y:y-textHeight/2-margin,
     text:s,
-    'font-size':LABEL_FONT_SIZE,
-    'font-family':FONT_FAMILY,
+    'font-size':Properties.LABEL_FONT_SIZE,
+    'font-family':Properties.FONT_FAMILY,
     fill:color || '#444'
   };
   return {
@@ -791,7 +801,7 @@ function text(s,color) {
   color = color || hlColorMap[s] || hlColorMap.defaults;
   return {
     type:'text',
-    'font-size':FONT_SIZE,'font-family':FONT_FAMILY,
+    'font-size':Properties.FONT_SIZE,'font-family':Properties.FONT_FAMILY,
     text:s+"",fill:color,'text-anchor':'start','font-weight':'bold'
   };
 }
