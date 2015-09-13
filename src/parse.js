@@ -313,10 +313,23 @@ function _fixNodes(stack,re,endIndex) {
 
 function _checkRepeat(node) {
   if (node.repeat) {
+    var msg,astype = node.assertionType;
+    if (astype === 'AssertLookahead' || astype === 'AssertNegativeLookahead') {
+      if (node.raw.slice(-1) === '?') {
+        return;
+      }
+      var assertifier = astype === 'AssertLookahead' ? '?=' : '?!';
+      var pattern = '('+assertifier+'pattern)';
+      msg = 'Needless repeat after assertion:\n' +
+        '/'+pattern+'+/、/'+pattern+'{1,n}/ is same as /'+pattern+'/。\n' +
+        '/'+pattern+'*/、/'+pattern+'{0,n}/ is same as /'+pattern+'?/。';
+    } else {
+      msg = 'Nothing to repeat!';
+    }
     throw new RegexSyntaxError({
       type:'NothingRepeat',
-      lastIndex:node.indices[1],
-      message:'Nothing to repeat!Repeat after assertion doesn\'t make sense!'
+      lastIndex:node.indices[1]-1,
+      message: msg
     })
   }
 }
@@ -498,7 +511,7 @@ var actions=(function _() {
     stack.groupCounter=counter; //keep groupCounter persist and ref modifiable
     return stack;
   }
-  function groupNonCapture(stack) { // /(?:)/\
+  function groupNonCapture(stack) { // /(?:)/
     var group=stack._parentGroup
     group.nonCapture=true;
     group.num=undefined;
