@@ -314,18 +314,12 @@ function _fixNodes(stack,re,endIndex) {
 function _checkRepeat(node) {
   if (node.repeat) {
     var msg,astype = node.assertionType;
-    if (astype === 'AssertLookahead' || astype === 'AssertNegativeLookahead') {
-      if (node.raw.slice(-1) === '?') {
-        return;
-      }
-      var assertifier = astype === 'AssertLookahead' ? '?=' : '?!';
-      var pattern = '('+assertifier+'pattern)';
-      msg = 'Needless repeat after assertion:\n' +
-        '/'+pattern+'+/、/'+pattern+'{1,n}/ is same as /'+pattern+'/。\n' +
-        '/'+pattern+'*/、/'+pattern+'{0,n}/ is same as /'+pattern+'?/。';
-    } else {
-      msg = 'Nothing to repeat!';
-    }
+    var assertifier = astype === 'AssertLookahead' ? '?=' : '?!';
+    var pattern = '('+assertifier+'b)';
+    msg = 'Nothing to repeat! Repeat after assertion doesn\'t make sense:\n' +
+      '/a'+pattern+'+/、/a'+pattern+'{1,n}/ are same as /a'+pattern+'/。\n' +
+      '/a'+pattern+'*/、/a'+pattern+'{0,n}/、/a'+pattern+'?/ are same as /a/。';
+
     throw new RegexSyntaxError({
       type:'NothingRepeat',
       lastIndex:node.indices[1]-1,
