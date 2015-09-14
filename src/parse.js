@@ -318,8 +318,8 @@ function _checkRepeat(node) {
     if (astype === 'AssertLookahead'  || astype === 'AssertNegativeLookahead' ) {
       var assertifier = astype === 'AssertLookahead' ? '?=' : '?!';
       var pattern = '('+assertifier+'b)';
-      msg += '\n/a'+pattern+'+/、/a'+pattern+'{1,n}/ are same as /a'+pattern+'/。\n' +
-              '/a'+pattern+'*/、/a'+pattern+'{0,n}/、/a'+pattern+'?/ are same as /a/。';
+      msg += '\n/a'+pattern+'+/、/a'+pattern+'{1,n}/ are the same as /a'+pattern+'/。\n' +
+              '/a'+pattern+'*/、/a'+pattern+'{0,n}/、/a'+pattern+'?/ are the same as /a/。';
     }
 
     throw new RegexSyntaxError({
