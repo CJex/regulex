@@ -1,8 +1,8 @@
 {
   "name": "regulex",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "JavaScript Regular Expression Parser and Visualizer.",
-  "main": "src/regulex",
+  "main": "index",
   "repository": {
     "type": "git",
     "url": "https://github.com/JexCheng/regulex.git"
@@ -12,6 +12,9 @@
     "RegExp",
     "Regulex"
   ],
+  "dependencies":{
+    "amdefine":"~1.0.0"
+  },
   "author": {
     "name": "Jex"
   },
