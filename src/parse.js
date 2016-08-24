@@ -146,12 +146,16 @@ var G_DEBUG;
 */
 function parse(re,_debug) {
   G_DEBUG=_debug;
+  
   var parser=getNFAParser();
 
   var ret,stack,lastState;
   ret=parser.input(re,0,_debug);
   stack=ret.stack;
+
   stack=actions.endChoice(stack); // e.g. /a|b/
+
+  
   lastState=ret.lastState;
   var valid=ret.acceptable && ret.lastIndex===re.length-1;//just syntax valid regex
   if (!valid) {
@@ -229,14 +233,18 @@ function parse(re,_debug) {
   if (valid) {
     var groupCount=stack.groupCounter?stack.groupCounter.i:0;
     delete stack.groupCounter;
+    _fixNodes(stack,re,re.length);
+    
+    stack = _filterEmptyExact(stack);
     var ast=new AST({
       raw:re,
       groupCount:groupCount,
       tree:stack
     });
-    _fixNodes(stack,re,re.length);
+    
     // Check charset ranges out of order error.(Because of charsetRangeEndEscape)
     ast.traverse(_checkCharsetRange,CHARSET_NODE);
+    
     // Check any repeats after assertion. e.g. /a(?=b)+/ doesn't make sense.
     ast.traverse(_checkRepeat,ASSERT_NODE);
     _coalesceExactNode(stack);
@@ -267,8 +275,23 @@ function _set(obj,prop,value) {
   });
 }
 
+function _filterEmptyExact(stack) {
+  return stack.filter(function (node) {
+    if (node.type == EXACT_NODE && node.concatTemp) {
+      delete node.concatTemp;
+      return !!node.chars;
+    } else if (node.sub) {
+      node.sub = _filterEmptyExact(node.sub);
+    } else if (node.branches) {
+      node.branches = node.branches.map(_filterEmptyExact);
+    }
+    return true;
+  });
+}
+
 function _coalesceExactNode(stack) {
   var prev=stack[0];
+  down(prev);
   for (var i=1,j=1,l=stack.length,node;i<l;i++) {
     node=stack[i];
     if (node.type===EXACT_NODE) {
@@ -278,12 +301,21 @@ function _coalesceExactNode(stack) {
         prev.chars+=node.chars;
         continue;
       }
-    } else if (node.sub) _coalesceExactNode(node.sub);
-    else if (node.branches) node.branches.map(_coalesceExactNode);
+    } else {
+      down(node);
+    }
     stack[j++]=node;
     prev=node;
   }
   if (prev) stack.length=j;
+  
+  function down(node) {
+    if (node.sub) {
+      _coalesceExactNode(node.sub);
+    } else if (node.branches) {
+      node.branches.map(_coalesceExactNode);
+    }
+  }
 }
 
 function _fixNodes(stack,re,endIndex) {
@@ -304,7 +336,10 @@ function _fixNodes(stack,re,endIndex) {
       },endIndex);
       node.branches.reverse();
     } else if (node.type===EXACT_NODE) {
-      node.chars = node.chars || node.raw;
+      if (!node.concatTemp) {
+        node.chars = node.chars || node.raw;
+      }
+      
     }
     return node.indices[0];
   },endIndex);
@@ -374,15 +409,22 @@ var actions=(function _() {
     // Escape actions and repeat actions will fill node.chars
     // node.chars = node.chars || node.raw
     var last=stack[0];
-    if (!last || last.type!=EXACT_NODE || last.repeat || last.chars)
+    if (!last || last.type!=EXACT_NODE || last.repeat || (last.chars && !last.concatTemp)) {
       stack.unshift({type:EXACT_NODE, indices:[i]});
+    }
+    
+    if (last && last.concatTemp) {
+      last.chars += c;
+    }
   }
   function dot(stack,c,i) { //   /./
     stack.unshift({type:DOT_NODE,indices:[i]});
   }
   function nullChar(stack,c,i) {
-    c="\0";
-    exact(stack,c,i);
+    stack.unshift({
+      type:EXACT_NODE, chars:"\0",
+      indices:[i-1] 
+    });
   }
   function assertBegin(stack,c,i) { //  /^/
     stack.unshift({
@@ -467,13 +509,22 @@ var actions=(function _() {
     _set(repeat,'beginIndex',charEndIndex-stack[0].indices[0]);
   }
   function repeatNonGreedy(stack) { stack[0].repeat.nonGreedy=true}
+  
+  function escapeStart(stack,c,i) {
+    stack.unshift({
+      concatTemp:true,
+      type:EXACT_NODE,chars:"",indices:[i]
+    });
+  }
   function normalEscape(stack,c,i) {
     if (escapeCharMap.hasOwnProperty(c)) c=escapeCharMap[c];
+
     stack.unshift({
       type:EXACT_NODE,chars:c,indices:[i-1]
     });
   }
   function charClassEscape(stack,c,i) {
+
     stack.unshift({
       type:CHARSET_NODE,indices:[i-1],chars:'',ranges:[],
       classes:[c],exclude:false
@@ -481,16 +532,18 @@ var actions=(function _() {
   }
   function hexEscape(stack,c,i,state,s) {
     c=String.fromCharCode(parseInt(s[i-1]+c,16));
+    stack.shift(); // remove temp "xN", /\x5/ should match "x5",so there is an exact node with chars "x5" in stack
     stack.unshift({
       type:EXACT_NODE, chars:c,
-      indices:[i-3] // \xAA length-1
+      indices:[i-3] // \xAA length
     });
   }
   function unicodeEscape(stack,c,i,state,s) {
     c=String.fromCharCode(parseInt(s.slice(i-3,i+1),16));
+    stack.shift(); // same as hexEscape, other cases could be emliminate at the end by _filterEmptyExact
     stack.unshift({
       type:EXACT_NODE, chars:c,
-      indices:[i-5] // \u5409 length-1
+      indices:[i-5] // \u5409 length
     });
   }
   function groupStart(stack,c,i) {
@@ -585,6 +638,7 @@ var actions=(function _() {
       delete stack.groupCounter;
       var parentStack=choice._parentStack;
       delete choice._parentStack;
+      
       return parentStack;
     }
     return stack;
@@ -711,6 +765,7 @@ var actions=(function _() {
   //console.log(K.locals(_));
 
   return {
+    escapeStart:escapeStart,
     exact:exact,dot:dot,nullChar:nullChar,assertBegin:assertBegin,
     assertEnd:assertEnd,assertWordBoundary:assertWordBoundary,
     repeatnStart:repeatnStart,repeatnComma:repeatnComma,repeatNonGreedy:repeatNonGreedy,
@@ -818,7 +873,7 @@ var config={
     ['repeat0,repeat1,repeat01,repeatn>repeatErrorFinal','+*'],
 
     // Escape
-    ['start,begin,end,groupStart,groupQualifiedStart,exact,repeatNonGreedy,repeat0,repeat1,repeat01,repeatn,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>escape','\\'],
+    ['start,begin,end,groupStart,groupQualifiedStart,exact,repeatNonGreedy,repeat0,repeat1,repeat01,repeatn,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>escape','\\',actions.escapeStart],
     ['escape>nullChar','0',actions.nullChar],
     ['nullChar>digitFollowNullError','0-9'], // "/\0123/" is invalid in standard
     ['escape>exact',normalEscapeEX,actions.normalEscape],
@@ -861,7 +916,7 @@ var config={
 
     // Charset Escape
     [charsetIncompleteEscapeStates+
-      ',charsetStart,charsetContent,charsetClass,charsetExclude,charsetRangeEnd>charsetEscape','\\'],
+      ',charsetStart,charsetContent,charsetNullChar,charsetClass,charsetExclude,charsetRangeEnd>charsetEscape','\\'],
     ['charsetEscape>charsetContent',normalEscapeInCharsetEX,actions.charsetNormalEscape],
     ['charsetEscape>charsetNullChar','0',actions.charsetNullChar],
 

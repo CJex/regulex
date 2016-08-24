@@ -337,15 +337,15 @@ function succ(c) {return String.fromCharCode(c.charCodeAt(0)+1)}
 
 var printEscapeMap={
   "\n":"\\n","\t":"\\t","\f":"\\f",
-  "\r":"\\r"," ":" ","\\":"\\\\"
+  "\r":"\\r"," ":" ","\\":"\\\\","\0":"\\0"
 };
 // Convert string to printable,replace all control chars and unicode to hex escape
 function toPrint(s,isRaw) {
   var ctrl=/[\x00-\x1F\x7F-\x9F]/,unicode=/[\u009F-\uFFFF]/;
   s=s.split('').map(function (c) {
     if (!isRaw && printEscapeMap.hasOwnProperty(c)) return printEscapeMap[c];
-    else if (ctrl.test(c)) return '\\x'+ord(c).toString(16).toUpperCase();
     else if (unicode.test(c)) return '\\u'+('00'+ord(c).toString(16).toUpperCase()).slice(-4);
+    //else if (ctrl.test(c)) return '\\x'+("0"+ord(c).toString(16).toUpperCase()).slice(-2);
     return c;
   }).join('');
   return s;
