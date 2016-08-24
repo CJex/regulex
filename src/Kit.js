@@ -345,7 +345,7 @@ function toPrint(s,isRaw) {
   s=s.split('').map(function (c) {
     if (!isRaw && printEscapeMap.hasOwnProperty(c)) return printEscapeMap[c];
     else if (unicode.test(c)) return '\\u'+('00'+ord(c).toString(16).toUpperCase()).slice(-4);
-    //else if (ctrl.test(c)) return '\\x'+("0"+ord(c).toString(16).toUpperCase()).slice(-2);
+    else if (ctrl.test(c)) return '\\x'+("0"+ord(c).toString(16).toUpperCase()).slice(-2);
     return c;
   }).join('');
   return s;

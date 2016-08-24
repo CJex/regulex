@@ -272,7 +272,7 @@ var plotNode={
   },
   exact:function (node,x,y) {
     var color='skyblue';
-    return textRect(node.raw,x,y,color);
+    return textRect(node.chars,x,y,color);
   },
   dot:function (node,x,y) {
     var bgColor='DarkGreen',textColor='white';
