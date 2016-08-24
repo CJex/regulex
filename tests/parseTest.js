@@ -6,6 +6,7 @@ var re2ast=testData.re2ast;
 
 parse.getNFAParser().assertDFA();
 
+
 testSyntax();
 testAST();
 console.log('Parse Test OK');

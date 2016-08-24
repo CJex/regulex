@@ -5,12 +5,13 @@ var reMatchCases=testData.reMatchCases;
 
 reMatchCases.forEach(function (c) {
   var re=c[0],strings=typeof c[1]==='string'?[c[1]]:c[1];
-  var myRe=new MyRegExp(re.source,re);
   strings.forEach(function (s) {
-    var result=re.exec(s),myResult=myRe.exec(s);
     try {
+      var myRe=new MyRegExp(re.source,re);
+      var result=re.exec(s),myResult=myRe.exec(s);
       assert.deepEqual(myResult,result,re);
     } catch(e) {
+      K.log(re);
       re.debug=true;
       myRe=new MyRegExp(re.source,re);
       myResult=myRe.exec(s);

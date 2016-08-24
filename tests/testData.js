@@ -173,6 +173,19 @@ var re2ast =[{ raw: '\\\\{3}',
        indices: [ 0, 5 ],
        raw: '\\\\{3}' } ],
   groupCount: 0 }
+, {
+  raw: 'a|\\0',
+  tree:
+   [ { type: 'choice',
+       indices: [ 0, 4 ],
+       branches:
+        [ [ { type: 'exact', indices: [ 0, 1 ], raw: 'a', chars: 'a' } ],
+          [ { type: 'exact',
+              chars: '\u0000',
+              indices: [ 2, 4 ],
+              raw: '\\0' } ] ],
+       raw: 'a|\\0' } ],
+  groupCount: 0 }
 ,{
   raw: 'ab+(1|0)?[a-z][^0-9]a\\nb\\rc\\td',
   groupCount: 1,
@@ -1357,17 +1370,7 @@ var re2ast =[{ raw: '\\\\{3}',
           nonGreedy: false
         },
         raw: '.*'
-      }, {
-        type: 'exact',
-        indices: [12, 13],
-        raw: '<',
-        chars: '<'
-      }, {
-        type: 'exact',
-        chars: '/',
-        indices: [13, 15],
-        raw: '\\/'
-      }, {
+      },{ type: 'exact', indices: [ 12, 15 ], raw: '<\\/', chars: '</' },{
         type: 'backref',
         indices: [15, 17],
         num: 1,
@@ -1399,22 +1402,7 @@ var re2ast =[{ raw: '\\\\{3}',
         indices: [20, 24],
         endParenIndex: 23,
         raw: '(.*)'
-      }, {
-        type: 'exact',
-        indices: [24, 25],
-        raw: ' ',
-        chars: ' '
-      }, {
-        type: 'exact',
-        chars: '/',
-        indices: [25, 27],
-        raw: '\\/'
-      }, {
-        type: 'exact',
-        indices: [27, 28],
-        raw: '>',
-        chars: '>'
-      }]
+      }, { type: 'exact', indices: [ 24, 28 ], raw: ' \\/>', chars: ' />' }]
     ],
     raw: '<(.*)(.*)>.*<\\/\\1>|<(.*) \\/>'
   }]
