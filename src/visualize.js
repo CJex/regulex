@@ -2,7 +2,7 @@ if (typeof define !== 'function') var define = require('amdefine')(module);
 define(['./Kit','./parse'],function (K,parse) {
 parse.exportConstants();
 
-var FONT_SIZE=16,LABEL_FONT_SIZE=14,PATH_LEN=16,
+var FONT_SIZE=16,LABEL_FONT_SIZE=14,PATH_LEN=16,BG_COLOR='#EEE',
     FONT_FAMILY='DejaVu Sans Mono,monospace';
 
 var _multiLine=false; /* global flag quick work*/
@@ -25,7 +25,7 @@ function getCharSize(fontSize,fontBold) {
 
 function initTmpText(paper) {
   _tmpText=paper.text(
-       -1000,-1000,"XgfTlM|.q\nXgfTlM|.q"
+       -1000,-1000,"XgfTlM|.q\nXgfTlM|.q" // random multiline text
   ).attr({'font-family':FONT_FAMILY,'font-size':FONT_SIZE});
 }
 
@@ -35,6 +35,11 @@ function initTmpText(paper) {
 function visualize(re,flags,paper) {
   paper.clear();
   paper.setSize(0,0);
+  var bg = paper.rect(0,0,0,0);
+  bg.attr("fill", BG_COLOR);
+  bg.attr("stroke", BG_COLOR);
+  
+  
   initTmpText(paper);
   _multiLine=!!~flags.indexOf('m');
 
@@ -57,6 +62,7 @@ function visualize(re,flags,paper) {
   width+=PAPER_MARGIN;
   height=charSize.height+PAPER_MARGIN*2;
   texts=paper.add(texts);
+  
   paper.setSize(width,charSize.height+PAPER_MARGIN*2);
 
   var ret=plot(re.tree,0,0);
@@ -65,8 +71,14 @@ function visualize(re,flags,paper) {
   width=Math.max(ret.width+2*PAPER_MARGIN,width);
 
   paper.setSize(width,height);
+  
+  bg.attr('width',width);
+  bg.attr('height',height);
+  
+  
   translate(ret.items,PAPER_MARGIN,PAPER_MARGIN*2+charSize.height-ret.y);
   paper.add(ret.items);
+  
 }
 
 

@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<title>Regulex：JavaScript Regular Expression Visualizer.</title>
+<title>Regulex：JavaScript Regular Expression Visualizer</title>
 <style>
 body,html * {
 margin:0;
@@ -177,12 +177,16 @@ body.embed{height:100%;}
 body.embed #graphCt {
   height: 100vh;
 }
+.exportCanvas {
+  display:block;
+  margin:0 auto;
+}
 </style>
 </head>
 <body>
 <script>
 var params=getParams();
-if (params.embed) {
+if (params.embed || params.cmd=="export") {
   document.body.className+= " embed";
 }
 
@@ -236,7 +240,6 @@ function getParams() {
 <!--script src="http://libs.useso.com/js/require.js/2.1.11/require.min.js"></script-->
 
 <script type="text/javascript" charset="utf-8">
-params.debug=true;
 /*
 //var raphael="http://cdn.staticfile.org/raphael/2.1.2/raphael-min.js";
 var raphael="http://libs.useso.com/js/raphael/2.1.2/raphael-min.js";
@@ -289,13 +292,19 @@ if (params.flags) {
 if (params.re) {
   setInputValue(params.re);
 }
-
-initListeners();
-dragGraph($('graphCt'));
-
-
-
 visualIt();
+if (params.cmd=='export') {
+  showExportImage();
+  return;
+} else {
+  initListeners();
+  dragGraph($('graphCt'));
+}
+
+
+
+
+
 
 function visualIt(skipError) {
   var re=getInputValue();
@@ -328,10 +337,19 @@ function showError(re,err) {
   setInnerText(errorBox,msg.join("\n"));
 }
 
-function changeHash() {
+function serializeHash(params) {
   var re=getInputValue();
   var flags=getFlags();
-  location.hash="#!embed=false&flags="+flags+"&re="+encodeURIComponent(params.re=re);
+  return "#!" + 
+    (params.debug?"debug=true&":"") + 
+    (params.cmd?"cmd="+params.cmd+"&":"") + 
+    (params.embed?"embed=true&":"") + 
+    "flags="+flags+"&re="+encodeURIComponent(params.re=re);
+  
+}
+
+function changeHash() {
+  location.hash=serializeHash(params);
 }
 
 function initListeners() {
@@ -364,7 +382,10 @@ function initListeners() {
   });
 
   exportBtn.addEventListener('click',function () {
-    exportImage();
+    var newParams = Object.assign({},params);
+    newParams.cmd='export';
+    var hash = serializeHash(newParams);
+    window.open(location.href.split('#!')[0]+hash,"_blank");
   });
 
 
@@ -425,17 +446,25 @@ function setFlags(fg) {
   setInnerText(flagBox,fg);
 }
 
-function exportImage() {
+function showExportImage() {
   svg = graphCt.getElementsByTagName('svg')[0];
+  var w = svg.clientWidth || parseInt(getComputedStyle(svg).width);
+  var h = svg.clientHeight || parseInt(getComputedStyle(svg).height);
+  var img = new Image;
+  img.width=w;
+  img.height=h;
+  img.setAttribute('src',svgDataURL(svg));
+
   var canvas = document.createElement( "canvas" );
   var ctx = canvas.getContext( "2d" );
-  var img = new Image;
-  img.setAttribute('src',svgDataURL(svg));
-  canvas.setAttribute('width',svg.clientWidth || parseInt(getComputedStyle(svg).width));
-  canvas.setAttribute('height',svg.clientHeight || parseInt(getComputedStyle(svg).height));
+  
+  canvas.className="exportCanvas";
+  canvas.setAttribute('width',w);
+  canvas.setAttribute('height',h);
   img.onload=function () {
     ctx.drawImage( img, 0, 0 );
-    location.href=canvas.toDataURL( "image/png" );
+    graphCt.style.display='none';
+    document.body.appendChild(canvas);
   };
 }
 
