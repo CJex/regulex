@@ -5,7 +5,7 @@ JavaScript Regular Expression Parser & Visualizer.
 
 Online : http://jex.im/regulex/
 
-###Features:
+### Features:
 - Written in pure JavaScript. No backend needed.
 - You can embed the graph in you own site through html iframe element.
 - Detailed error message. In most cases it can point out the precise syntax error position.
