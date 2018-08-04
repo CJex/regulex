@@ -7,7 +7,7 @@
 - Written in pure JavaScript. No backend needed.
 - You can embed the graph in you own site through HTML iframe element.
 - Detailed error message. In most cases it can point out the precise syntax error position.
-- No support for octal escape. Yes it is a feature. ECMAScript strict mode doesn't support octal escape in string, but many browsers still support octal escape in regex. I make things easier. In regulex, DecimalEscape will always be treated as back reference. If the back reference is invalid, e.g. `/\1/`、`/(\1)/`、`/(a)\2/` , or DecimalEscape appears in charset（because in this case it can't be explained as back reference, e.g. `/(ab)[\1]/`）, Regulex will always throw an error.
+- No support for octal escape. Yes it is a feature. ECMAScript strict mode doesn't support octal escape in string, but many browsers still support octal escape in regex. I make things easier. In regulex, DecimalEscape will always be treated as back reference. If the back reference is invalid, e.g. `/\1/`, `/(\1)/`, `/(a)\2/`, or DecimalEscape appears in charset（because in this case it can't be explained as back reference, e.g. `/(ab)[\1]/`, Regulex will always throw an error.
 
 ### Build
 
@@ -57,10 +57,10 @@ function logError(re, err) {
 
 
 function getRegexFlags(re) {
-  var flags="";
-  flags+=re.ignoreCase ? "i" : "";
-  flags+=re.global ? "g" : "";
-  flags+=re.multiline ? "m" : "";
+  var flags = "";
+  flags += re.ignoreCase ? "i" : "";
+  flags += re.global ? "g" : "";
+  flags += re.multiline ? "m" : "";
   return flags;
 }
 ```
