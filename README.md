@@ -2,6 +2,8 @@
 
 [Regulex](https://jex.im/regulex/) is a JavaScript Regular Expression Parser & Visualizer.
 
+Try it now: <https://jex.im/regulex/>
+
 **This project is under reconstruction!**
 
 ### Features

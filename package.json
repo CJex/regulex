@@ -1,0 +1,49 @@
+{
+  "name": "regulex",
+  "version": "1.0.0",
+  "description": "Regular Expression Excited!",
+  "author": {
+    "name": "Jex"
+  },
+  "main": "./build/src/index",
+  "files": [
+    "build",
+    "src",
+    "test"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CJex/regulex.git"
+  },
+  "keywords": [
+    "Regular Expression",
+    "RegExp",
+    "Regex",
+    "XRegExp",
+    "PCRE",
+    "Parser",
+    "Regulex"
+  ],
+  "dependencies": {},
+  "license": "MIT",
+  "devDependencies": {
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^12.6.0",
+    "@types/power-assert": "^1.5.0",
+    "espower-typescript": "^9.0.2",
+    "fast-check": "^1.16.0",
+    "mocha": "^6.1.4",
+    "power-assert": "^1.6.1",
+    "prettier": "^1.18.2",
+    "ts-node": "^8.3.0",
+    "typescript": "^3.5.2",
+    "utility-types": "^3.7.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha --recursive --require espower-typescript/guess test/*Spec.ts",
+    "testit": "mocha --require espower-typescript/guess",
+    "format": "prettier --write \"{src,test}/**/*.{js,ts,css}\" \"./*.{js,ts,css}\"",
+    "prepare": "npm run build"
+  }
+}

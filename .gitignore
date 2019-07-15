@@ -1,2 +1,9 @@
-*.swp
 node_modules
+build
+*.log
+test/log/
+.node_repl_history
+.vscode
+.DS_Store
+*.code-workspace
+*.swp

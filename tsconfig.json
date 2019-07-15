@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "outDir": "build",
+    "target": "ES6",
+    "module": "commonjs",
+    "sourceMap": true,
+    "strict": true,
+    "downlevelIteration":true,
+    "noErrorTruncation": true,
+    "esModuleInterop":false,
+    "newLine": "LF",
+    "lib":["dom"]
+  },
+  "include": [
+    "src/**/*","test/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
