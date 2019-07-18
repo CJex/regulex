@@ -120,3 +120,17 @@ export function allEqual(a: any[]): boolean {
 function isNumber(n: any) {
   return Object.prototype.toString.call(n) === '[object Number]';
 }
+
+type Char = string;
+export function sampleInCharRange(range: K.CharRangeRepr, maxCount = 100): Char[] {
+  let chars: Char[] = [];
+  let minCodePoint = K.CharRange.begin(range);
+  let maxCodePoint = K.CharRange.end(range);
+  let flip = true;
+  while (maxCount-- > 0 && minCodePoint <= maxCodePoint) {
+    let cp = flip ? minCodePoint++ : maxCodePoint--;
+    chars.push(String.fromCodePoint(cp));
+    flip = !flip;
+  }
+  return chars;
+}

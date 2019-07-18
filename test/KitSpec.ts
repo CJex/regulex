@@ -1,6 +1,6 @@
 import * as K from '../src/Kit';
 import * as C from 'fast-check';
-import {testProp} from './utils';
+import {testProp, sampleInCharRange} from './utils';
 
 import assert = require('assert');
 
@@ -101,6 +101,78 @@ describe('Kit', () => {
         let {found, index} = K.bsearch(ranges, r, K.CharRange.compareIn);
         assert(found && K.CharRange.isSubsetOf(r, ranges[index]));
       }
+    });
+  });
+
+  describe('Charset', function() {
+    this.timeout(60000);
+
+    testProp('fromPattern toPattern equal', listOfCharRange(), a => {
+      let charset = new K.Charset(a);
+      assert(K.Charset.fromPattern(charset.toPattern()).equals(charset));
+    });
+
+    testProp('should include/exclude chars', C.tuple(listOfCharRange(10), C.boolean()), ([a, toExclude]) => {
+      let charset = new K.Charset(a);
+      if (toExclude) {
+        charset = K.Charset.fromPattern('^' + charset.toPattern());
+      }
+      for (let range of a) {
+        for (let c of sampleInCharRange(range)) {
+          assert(charset.includeChar(c) !== toExclude);
+        }
+      }
+    });
+
+    testProp('union intersect subtract', C.tuple(listOfCharRange(), listOfCharRange()), ([ranges1, ranges2]) => {
+      let charset1 = new K.Charset(ranges1);
+      let charset2 = new K.Charset(ranges2);
+      assert(charset1.union(charset1).equals(charset1));
+      let union = charset1.union(charset2);
+      assert(charset1.isSubsetof(union));
+      assert(charset2.isSubsetof(union));
+
+      let inter = charset1.intersect(charset1);
+      assert(inter && inter.equals(charset1));
+
+      inter = charset1.intersect(charset2);
+      if (inter.isEmpty()) {
+        assert(union.subtract(charset1).equals(charset2));
+        assert(union.subtract(charset2).equals(charset1));
+      } else {
+        assert(
+          union
+            .subtract(charset1)
+            .union(inter)
+            .equals(charset2)
+        );
+        assert(
+          union
+            .subtract(charset2)
+            .union(inter)
+            .equals(charset1)
+        );
+      }
+    });
+
+    testProp('inverted complementary', listOfCharRange(), a => {
+      let include = new K.Charset(a);
+      let exclude = K.Charset.fromPattern('^' + include.toPattern());
+
+      assert(include.inverted().toPattern() === exclude.toPattern());
+
+      assert.deepEqual(include.inverted().ranges, exclude.ranges);
+
+      assert(include.inverted().equals(exclude));
+      assert(exclude.inverted().equals(include));
+
+      let charset1 = include.union(exclude);
+      assert(charset1.equals(K.Charset.unicode));
+
+      let charset2 = K.Charset.unicode.subtract(exclude);
+      assert(charset2.equals(include));
+
+      assert(include.intersect(exclude).isEmpty());
     });
   });
 });

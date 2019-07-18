@@ -254,6 +254,30 @@ export function escapeUnicodes(s: string, codePointSyntax: boolean = true): stri
     .join('');
 }
 
+export function escapeNonAlphanum(s: string, codePointSyntax: boolean = true): string {
+  let alphanum = /^[A-Z0-9\-\\]$/i;
+  let chars = codePointSyntax ? Array.from(s) : s.split('');
+  return chars
+    .map(c => {
+      let cp = ord(c);
+      let cps = cp.toString(16).toUpperCase();
+      if (alphanum.test(c)) {
+        return c;
+      } else if (cp <= 0xf) {
+        return '\\x0' + cps;
+      } else if (cp <= 0xff) {
+        return '\\x' + cps;
+      } else if (cp <= 0xfff) {
+        return '\\u0' + cps;
+      } else if (cp > 0xffff) {
+        return '\\u{' + cps + '}';
+      } else {
+        return '\\u' + cps;
+      }
+    })
+    .join('');
+}
+
 export function escapeRegex(s: string, inCharClass = false): string {
   s = s.replace(/[\/\\^$*+?.()|[\]{}]/g, '\\$&');
   if (inCharClass) {
@@ -485,5 +509,273 @@ export namespace CharRange {
       a.push(r1++);
     }
     return a;
+  }
+}
+
+/**
+Regex like Charset,support ranges and invertion
+@example Charset.fromPattern("^a-z0-9")
+*/
+export class Charset {
+  static readonly unicode = new Charset([CharRange.pack(0, Char.MAX_CODE_POINT)]);
+  static readonly empty = new Charset([]);
+  readonly ranges: CharRangeRepr[];
+
+  /**
+  Regex like char class pattern string like '^a-f123' to Charset: exclude range "a" to "f" and chars "123".
+  Support "^" to indicate invertion. Char "\" only used to escape "-" and "\" itself.
+  Char classes like "\w\s" are not supported!
+  @param {string} re  Regex like char class [^a-z0-9_] input as "^a-z0-9_".
+  */
+  static fromPattern(re: string): Charset {
+    if (!re.length) return Charset.empty;
+    let codePoints = Array.from(re).map(ord);
+    let stack: number[] = [];
+    let ranges: CharRangeRepr[] = [];
+    let exclude = false;
+    let i = 0;
+
+    if (codePoints[0] === _excludeSignCodePoint && codePoints.length > 1) {
+      i++;
+      exclude = true;
+    }
+
+    for (let l = codePoints.length; i < l; i++) {
+      let cp = codePoints[i];
+      if (cp === _escapeCodePoint) {
+        // Identity escape,e.g. "-" and "="
+        if (++i < l) {
+          stack.push(codePoints[i]);
+        } else {
+          throw new SyntaxError('Invalid end escape');
+        }
+      } else if (cp === _hyphenCodePoint) {
+        i++;
+        if (stack.length > 0 && i < l) {
+          let rangeBegin = stack.pop()!;
+          let rangeEnd = codePoints[i];
+          if (rangeEnd === _escapeCodePoint) {
+            if (++i < l) {
+              rangeEnd = codePoints[i];
+            } else {
+              throw new SyntaxError('Invalid end escape');
+            }
+          }
+          if (rangeBegin > rangeEnd) {
+            // z-a  is invalid
+            throw new RangeError(
+              'Charset range out of order: ' +
+                escapeNonAlphanum(String.fromCodePoint(rangeBegin, _hyphenCodePoint, rangeEnd)) +
+                ' !\n' +
+                escapeNonAlphanum(re)
+            );
+          }
+          ranges.push(CharRange.pack(rangeBegin, rangeEnd));
+        } else {
+          throw new SyntaxError(
+            'Incomplete char range at ' + i + ': ' + String.fromCodePoint(...codePoints.slice(i - 2, i + 2))
+          );
+        }
+      } else {
+        stack.push(cp);
+      }
+    }
+
+    ranges = ranges.concat(stack.map(CharRange.single));
+    let charset = new Charset(ranges);
+    if (exclude) {
+      return Charset.unicode.subtract(charset);
+    } else {
+      return charset;
+    }
+  }
+
+  /**
+  Build from single char list.
+  */
+  static fromChars(chars: string) {
+    return Charset.fromCodePoints(Array.from(chars).map(ord));
+  }
+
+  static fromCodePoints(codePoints: number[]) {
+    return new Charset(codePoints.map(CharRange.single));
+  }
+
+  /**
+  Create from CharRange list.
+  */
+  constructor(ranges: CharRangeRepr[]) {
+    this.ranges = CharRange.coalesce(ranges);
+  }
+
+  includeChar(c: string): boolean {
+    return this.includeCodePoint(ord(c));
+  }
+
+  includeCodePoint(cp: number): boolean {
+    let {found} = bsearch<CharRangeRepr, number>(this.ranges, cp, (cp, range) => {
+      return CharRange.compareCodePointToRange(cp, range);
+    });
+    return found;
+  }
+
+  includeRange(range: CharRangeRepr): boolean {
+    let {found} = bsearch(this.ranges, range, (range, x) => {
+      if (CharRange.isSubsetOf(range, x)) return Ordering.EQ;
+      return CharRange.compare(range, x);
+    });
+    return found;
+  }
+
+  isSubsetof(parent: Charset): boolean {
+    let a = this.intersect(parent);
+    if (typeof a === 'undefined') return false;
+    return a.equals(this);
+  }
+
+  isEmpty() {
+    return !this.ranges.length;
+  }
+
+  _size?: number;
+  /**
+  Get Charset total count of chars
+  */
+  getSize(): number {
+    if (this._size === undefined) {
+      this._size = sum(this.ranges.map(CharRange.getSize));
+    }
+    return this._size;
+  }
+
+  getMinCodePoint(): Maybe<number> {
+    if (!this.ranges.length) return;
+    return CharRange.begin(this.ranges[0]);
+  }
+
+  getMaxCodePoint(): Maybe<number> {
+    if (!this.ranges.length) return;
+    return CharRange.end(this.ranges[this.ranges.length - 1]);
+  }
+
+  subtract(other: Charset): Charset {
+    let newRanges: CharRangeRepr[] = [];
+    let thisRanges = this.ranges.slice();
+    let toExcludeRanges = other.ranges;
+    let i = 0;
+
+    loopNextExclude: for (let ex of toExcludeRanges) {
+      for (; i < thisRanges.length; i++) {
+        let range = thisRanges[i];
+        let rg = CharRange.subtract(range, ex);
+        if (rg === range) {
+          // no overlap
+          if (range > ex) {
+            continue loopNextExclude;
+          } else {
+            newRanges.push(range);
+            continue;
+          }
+        } else if (typeof rg === 'undefined') {
+          // whole a has been excluded
+          continue;
+        } else if (Array.isArray(rg)) {
+          newRanges.push(rg[0]);
+          thisRanges[i] = rg[1];
+          continue loopNextExclude;
+        } else {
+          if (rg < ex) {
+            newRanges.push(rg);
+            continue;
+          } else {
+            thisRanges[i] = rg;
+            continue loopNextExclude;
+          }
+        }
+      }
+
+      break;
+    }
+
+    let ranges = newRanges.concat(thisRanges.slice(i));
+    if (!ranges.length) return Charset.empty;
+
+    return new Charset(ranges);
+  }
+
+  inverted(): Charset {
+    return Charset.unicode.subtract(this);
+  }
+
+  union(other: Charset): Charset {
+    return new Charset(this.ranges.concat(other.ranges));
+  }
+
+  intersect(other: Charset): Charset {
+    let otherRanges = other.ranges.slice();
+    let thisRanges = this.ranges;
+    let newRanges: CharRangeRepr[] = [];
+    for (let i = 0, j = 0; i < thisRanges.length && j < otherRanges.length; ) {
+      let r1 = thisRanges[i];
+      let r2 = otherRanges[j];
+
+      let inter = CharRange.intersect(r1, r2);
+      if (typeof inter === 'undefined') {
+        // no overlap
+        if (r1 < r2) i++;
+        else j++;
+      } else {
+        newRanges.push(inter);
+        let end1 = CharRange.end(r1);
+        let end2 = CharRange.end(r2);
+        if (end1 <= end2) i++;
+        if (end2 <= end1) j++;
+      }
+    }
+
+    if (!newRanges.length) return Charset.empty;
+
+    return new Charset(newRanges);
+  }
+
+  equals(other: Charset): boolean {
+    if (this.ranges.length !== other.ranges.length) return false;
+    return compareArray(this.ranges, other.ranges, CharRange.compare) === Ordering.EQ;
+  }
+
+  toPattern(): string {
+    return this.ranges.map(CharRange.toPattern).join('');
+  }
+
+  toString(): string {
+    return escapeNonAlphanum(this.toPattern());
+  }
+
+  toRegex(): RegExp {
+    return new RegExp('[' + this.toPattern().replace(/[\[\]]/g, '\\$&') + ']', 'u');
+  }
+
+  toCodePoints(maxCount = Infinity): number[] {
+    let a = [];
+    for (let r of this.ranges) {
+      let b = CharRange.toCodePoints(r, maxCount);
+      maxCount -= b.length;
+      a.push(b);
+    }
+
+    return flat(a);
+  }
+
+  [_inspect_](): string {
+    return this.toString();
+  }
+
+  static compare(a: Charset, b: Charset): Ordering {
+    if (a === b) return Ordering.EQ;
+    return compareArray(a.ranges, b.ranges, CharRange.compare);
+  }
+
+  static union(a: Charset[]): Charset {
+    return a.reduce((prev, current) => prev.union(current), Charset.empty);
   }
 }
