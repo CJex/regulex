@@ -2,6 +2,10 @@ import * as K from '../src/Kit';
 import * as C from 'fast-check';
 import {testProp, sampleInCharRange} from './utils';
 
+import Unicode from '../src/Unicode';
+import * as UnicodeProperty from '../src/UnicodeProperty';
+import {factorize, DEFAULT_UNICODE_PKG} from '../src/tools/buildUnicode';
+
 import assert = require('assert');
 
 const charPairGen = () => C.tuple(C.fullUnicode(), C.fullUnicode());
@@ -174,5 +178,86 @@ describe('Kit', () => {
 
       assert(include.intersect(exclude).isEmpty());
     });
+
+    // Impractical, took several seconds or even minutes to complete these tests
+    if (false) {
+      let unicodeCats = (function() {
+        let a: string[] = [];
+        let U = Object.assign({}, UnicodeProperty.canonical) as {[k: string]: Set<string>};
+        delete U.NonBinary_Property;
+        for (let k in U) {
+          for (let cat of U[k]) {
+            a.push(k + '/' + cat);
+          }
+        }
+        return a;
+      })();
+
+      const genUnicodeCat = C.constantFrom(...unicodeCats);
+
+      it('Unicode module', () => {
+        for (let path of unicodeCats) {
+          let codePoints = require(DEFAULT_UNICODE_PKG + '/' + path + '/code-points.js');
+          let charset = K.Charset.fromCodePoints(codePoints);
+          let [cls, cat] = path.split('/');
+          assert(charset.equals((Unicode as any)[cls][cat]));
+        }
+      });
+
+      testProp('Unicode category fromPattern toPattern equal', genUnicodeCat, cat => {
+        let codePoints = require(DEFAULT_UNICODE_PKG + '/' + cat + '/code-points.js');
+        let charset = K.Charset.fromCodePoints(codePoints);
+        assert(K.Charset.fromPattern(charset.toPattern()).equals(charset));
+      });
+
+      testProp('fromCodePoints toCodePoints equal', genUnicodeCat, cat => {
+        let codePoints = require(DEFAULT_UNICODE_PKG + '/' + cat + '/code-points.js');
+        let charset = K.Charset.fromCodePoints(codePoints);
+        assert.deepEqual(charset.toCodePoints(), codePoints);
+      });
+
+      testProp('factorize', C.array(listOfCharRange(), 1, 60), a => {
+        let charsets = a.map(ranges => new K.Charset(ranges));
+        let {factors, mapping} = factorize(charsets);
+        if (factors.length) {
+          assertNonOverlap(factors);
+        } else {
+          for (let c of charsets) {
+            assert(!mapping.has(c));
+          }
+        }
+
+        let factorUnion = K.Charset.union(factors);
+        let union = K.Charset.union(charsets);
+
+        assert(factorUnion.equals(union));
+
+        let factorSize = K.sum(factors.map(c => c.getSize()));
+        let factorUnionSize = factorUnion.getSize();
+        let unionSize = union.getSize();
+        assert(factorSize === unionSize && factorUnionSize === unionSize);
+
+        for (let [c, parts] of mapping) {
+          let u = K.Charset.union(parts);
+          assertNonOverlap(parts);
+          assert(c.equals(u));
+        }
+
+        for (let c of charsets) {
+          if (!mapping.has(c)) {
+            for (let a of factors) {
+              assert(a === c || c.intersect(a).isEmpty());
+            }
+          }
+        }
+
+        function assertNonOverlap(a: K.Charset[]): void {
+          a.reduce((prev, current) => {
+            assert(prev.intersect(current).isEmpty());
+            return current;
+          });
+        }
+      });
+    }
   });
 });
