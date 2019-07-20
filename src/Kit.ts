@@ -12,6 +12,23 @@ export const enum Ordering {
 
 export type Maybe<T> = T | undefined;
 
+export type OK<T> = {value: T};
+export type Err<E> = {error: E};
+
+export type Result<T, E> = OK<T> | Err<E>;
+
+export function isResultOK<A>(a: Result<A, any>): a is OK<A> {
+  return (<Err<any>>a).error === undefined;
+}
+
+export function Err<E>(a: E): undefined extends E ? never : Err<E> {
+  return <any>{error: a};
+}
+
+export function OK<T>(a: T): OK<T> {
+  return {value: a};
+}
+
 export interface Eq<A> {
   equals: (x: A, y: A) => boolean;
 }
@@ -629,7 +646,6 @@ export class Charset {
 
   isSubsetof(parent: Charset): boolean {
     let a = this.intersect(parent);
-    if (typeof a === 'undefined') return false;
     return a.equals(this);
   }
 
