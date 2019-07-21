@@ -139,6 +139,14 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
     return new TryParser(this);
   }
 
+  followedBy(look: Parser<S, any, State, UserError>): Lookahead<S, A, State, UserError> {
+    return new Lookahead(this, look, false);
+  }
+
+  notFollowedBy(look: Parser<S, any, State, UserError>): Lookahead<S, A, State, UserError> {
+    return new Lookahead(this, look, true);
+  }
+
   parse(s: S, initalState: State): ParseResult<A, State, UserError> {
     let context = new ParseCtx<S, State, UserError>(s, initalState);
     let result: any = this._parseWith(context);
@@ -348,6 +356,46 @@ export class TryParser<S extends K.Stream<S[0]>, A, State, UserError> extends Pa
 
   _deref(): this {
     this._p = this._p._getDeref();
+    return this;
+  }
+
+  _getFirstSet() {
+    return this._p._getFirstSet();
+  }
+}
+
+export class Lookahead<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A, State, UserError> {
+  constructor(
+    private _p: Parser<S, A, State, UserError>,
+    private _look: Parser<S, any, State, UserError>,
+    private _negative: boolean
+  ) {
+    super();
+  }
+  _parseWith(context: ParseCtx<S, State, UserError>): SimpleResult<A, UserError> {
+    let result = this._p._parseWith(context);
+    if (isResultOK(result)) {
+      let {position, state} = context;
+      let a = this._look._parseWith(context);
+      context.position = position;
+      context.state = state;
+
+      let ok = isResultOK(a);
+      if (ok === this._negative) {
+        if (ok) return {error: {position: position, parser: this}};
+        else return a;
+      }
+    }
+    return result;
+  }
+
+  _checkNullable(): boolean {
+    return this._look.isNullable();
+  }
+
+  _deref(): this {
+    this._p = this._p._getDeref();
+    this._look = this._look._getDeref();
     return this;
   }
 
