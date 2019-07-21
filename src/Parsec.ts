@@ -131,6 +131,10 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
     return new StateF(this, f);
   }
 
+  opt(): Optional<S, A, State, UserError> {
+    return new Optional(this);
+  }
+
   parse(s: S, initalState: State): ParseResult<A, State, UserError> {
     let context = new ParseCtx<S, State, UserError>(s, initalState);
     let result: any = this._parseWith(context);
@@ -280,6 +284,34 @@ export class StateF<S extends K.Stream<S[0]>, A, State, UserError> extends Parse
 
   _checkNullable(): boolean {
     return this._p.isNullable();
+  }
+
+  _deref(): this {
+    this._p = this._p._getDeref();
+    return this;
+  }
+
+  _getFirstSet() {
+    return this._p._getFirstSet();
+  }
+}
+
+export class Optional<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, K.Maybe<A>, State, UserError> {
+  constructor(private _p: Parser<S, A, State, UserError>) {
+    super();
+  }
+  _parseWith(context: ParseCtx<S, State, UserError>): SimpleResult<K.Maybe<A>, UserError> {
+    let {position, state} = context;
+    let result = this._p._parseWith(context);
+    if (!isResultOK(result) && context.position === position) {
+      context.state = state;
+      return {value: undefined};
+    }
+    return result;
+  }
+
+  isNullable() {
+    return true;
   }
 
   _deref(): this {
