@@ -57,7 +57,7 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
   Map result value. Changing state in the map function is allowed, ensure yourself the parser is unrecoverable.
   (Why that? Because we don't have *REAL* immutable data type.)
   */
-  map<B>(f: (v: A, ctx: TokenCtx<S, State>) => B): MapF<S, any, B, State, UserError> {
+  map<B>(f: (v: A, ctx: TokenCtx<S, State>) => B): Parser<S, B, State, UserError> {
     return MapF.compose(
       this,
       (r, ctx) => {
@@ -73,8 +73,8 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
   /**
   Map result function return with UserError
   */
-  mapE<B>(f: (v: A, ctx: TokenCtx<S, State>) => Result<B, UserError>): MapF<S, any, B, State, UserError> {
-    let p: MapF<S, any, B, State, UserError> = MapF.compose(
+  mapE<B>(f: (v: A, ctx: TokenCtx<S, State>) => Result<B, UserError>): Parser<S, B, State, UserError> {
+    let p: Parser<S, B, State, UserError> = MapF.compose(
       this,
       (r, ctx) => {
         if (isResultOK(r)) {
@@ -101,7 +101,7 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
 
   mapF<B>(
     f: (a: SimpleResult<A, UserError>, ctx: TokenCtx<S, State>) => SimpleResult<B, UserError>
-  ): MapF<S, any, B, State, UserError> {
+  ): Parser<S, B, State, UserError> {
     return MapF.compose(
       this,
       f
@@ -111,7 +111,7 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
   /**
   Map result UserError
   */
-  mapError(f: (err: UserError) => UserError): MapF<S, any, A, State, UserError> {
+  mapError(f: (err: UserError) => UserError): Parser<S, A, State, UserError> {
     return MapF.compose(
       this,
       r => {
@@ -131,6 +131,10 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
     return new StateF(this, f);
   }
 
+  slice(): Parser<S, S, State, UserError> {
+    return this.map((_, ctx) => <S>ctx.input.slice(ctx.range[0], ctx.range[1]));
+  }
+
   opt(): Optional<S, A, State, UserError> {
     return new Optional(this);
   }
@@ -145,6 +149,27 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
 
   notFollowedBy(look: Parser<S, any, State, UserError>): Lookahead<S, A, State, UserError> {
     return new Lookahead(this, look, true);
+  }
+
+  /** Right biased sequence */
+  thenR<B>(next: Parser<S, B, State, UserError>): Parser<S, B, State, UserError> {
+    return new Seqs([this, next]).at(1);
+  }
+
+  /** Left biased sequence */
+  thenL(next: Parser<S, any, State, UserError>): Parser<S, A, State, UserError> {
+    return new Seqs([this, next]).at(0);
+  }
+
+  and<B>(next: Parser<S, B, State, UserError>): Seqs<S, [A, B], State, UserError> {
+    return new Seqs([this, next]);
+  }
+
+  between(
+    left: Parser<S, any, State, UserError>,
+    right: Parser<S, any, State, UserError>
+  ): Parser<S, A, State, UserError> {
+    return new Seqs([left, this, right]).at(1);
   }
 
   parse(s: S, initalState: State): ParseResult<A, State, UserError> {
@@ -239,7 +264,7 @@ export class FParser<S extends K.Stream<S[0]>, A, State, UserError> extends Pars
 }
 
 class MapF<S extends K.Stream<S[0]>, A, B, State, UserError> extends Parser<S, B, State, UserError> {
-  constructor(
+  private constructor(
     private _p: Parser<S, A, State, any>,
     private _f: (v: SimpleResult<A, UserError>, ctx: TokenCtx<S, State>) => SimpleResult<B, UserError>
   ) {
@@ -263,6 +288,18 @@ class MapF<S extends K.Stream<S[0]>, A, B, State, UserError> extends Parser<S, B
     let tokenCtx: TokenCtx<S, State> = context;
     context.range = [position, context.position];
     return this._f(result, tokenCtx);
+  }
+
+  // Unsafe, because we allowed changing state in map function
+  thenR<C>(next: Parser<S, C, State, UserError>): Parser<S, C, State, UserError> {
+    return this._p.thenR(next);
+  }
+
+  thenL(next: Parser<S, any, State, UserError>): Parser<S, B, State, UserError> {
+    return MapF.compose(
+      this._p.thenL(next),
+      this._f
+    );
   }
 
   _checkNullable(): boolean {
@@ -401,5 +438,72 @@ export class Lookahead<S extends K.Stream<S[0]>, A, State, UserError> extends Pa
 
   _getFirstSet() {
     return this._p._getFirstSet();
+  }
+}
+
+export class Seqs<S extends K.Stream<S[0]>, A extends Array<any>, State, UserError> extends Parser<
+  S,
+  A,
+  State,
+  UserError
+> {
+  constructor(private _items: Array<Parser<S, any, State, UserError>>) {
+    super();
+    if (!_items.length) throw new Error('Seqs can not be empty');
+  }
+
+  thenR<B>(next: Parser<S, B, State, UserError>): Parser<S, B, State, UserError> {
+    return new Seqs(this._items.concat([next])).map(a => a[a.length - 1]);
+  }
+
+  at<N extends number>(n: N): Parser<S, A[N], State, UserError> {
+    return this.map(a => a[n]);
+  }
+
+  _parseWith(context: ParseCtx<S, State, UserError>): SimpleResult<A, UserError> {
+    let plist = this._items;
+    let value: any = [];
+    for (let i = 0; i < plist.length; i++) {
+      let p = plist[i];
+      let result = p._parseWith(context);
+      if (isResultOK(result)) {
+        value.push(result.value);
+      } else {
+        return result;
+      }
+    }
+
+    return {value};
+  }
+
+  _checkNullable() {
+    for (let p of this._items) {
+      if (!p.isNullable()) return false;
+    }
+    return true;
+  }
+
+  _deref(): this {
+    for (let i = 0; i < this._items.length; i++) {
+      this._items[i] = this._items[i]._getDeref();
+    }
+    return this;
+  }
+
+  _getFirstSet() {
+    let all: any = [];
+    for (let p of this._items) {
+      let first = p._getFirstSet();
+      all = all.concat(first);
+      if (!p.isNullable()) {
+        return all;
+      }
+    }
+    return all;
+  }
+
+  desc(): string {
+    let seqs = this._items.map(p => p.desc()).join(',');
+    return `Seqs(${seqs})`;
   }
 }
