@@ -617,3 +617,40 @@ export class Repeat<S extends K.Stream<S[0]>, A, State, UserError> extends Parse
     return `${this._p.desc()}.repeat(${this._min},${this._max})`;
   }
 }
+
+// @singleton
+class Empty<State, UserError> extends Parser<any, undefined, State, UserError> {
+  _parseWith(context: ParseCtx<any, State, UserError>): SimpleResult<undefined, UserError> {
+    return {value: undefined};
+  }
+
+  isNullable() {
+    return true;
+  }
+}
+
+// @singleton
+class EOF<State, UserError> extends Empty<State, UserError> {
+  _parseWith(context: ParseCtx<any, State, UserError>): SimpleResult<undefined, UserError> {
+    if (context.position === context.input.length) return {value: undefined};
+    else return {error: {position: context.position, parser: this}};
+  }
+}
+
+class FailParser<State, UserError> extends Parser<any, never, State, UserError> {
+  constructor(private _msg: string, private _userError?: UserError) {
+    super();
+  }
+
+  _parseWith(context: ParseCtx<any, State, UserError>) {
+    let a: Failed<UserError> = {error: {parser: this, position: context.position, message: this._msg}};
+    if (this._userError !== undefined) {
+      a.error.userError = this._userError;
+    }
+    return a;
+  }
+
+  isNullable() {
+    return true;
+  }
+}
