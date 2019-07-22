@@ -172,6 +172,21 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
     return new Seqs([left, this, right]).at(1);
   }
 
+  repeat(min: number = 0, max: number = Infinity): Repeat<S, A, State, UserError> {
+    return new Repeat(this, min, max);
+  }
+
+  count(n: number) {
+    return this.repeat(n, n);
+  }
+
+  many(): Repeat<S, A, State, UserError> {
+    return this.repeat();
+  }
+  some(): Repeat<S, A, State, UserError> {
+    return this.repeat(1);
+  }
+
   parse(s: S, initalState: State): ParseResult<A, State, UserError> {
     let context = new ParseCtx<S, State, UserError>(s, initalState);
     let result: any = this._parseWith(context);
@@ -555,5 +570,50 @@ export class Alts<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<
   desc() {
     let alts = this._alts.map(p => p.desc()).join(',');
     return `Alts(${alts})`;
+  }
+}
+
+export class Repeat<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A[], State, UserError> {
+  constructor(private _p: Parser<S, A, State, UserError>, private _min: number = 0, private _max: number = Infinity) {
+    super();
+  }
+
+  _parseWith(context: ParseCtx<S, State, UserError>): SimpleResult<A[], UserError> {
+    let count = 0;
+    let value = [];
+    for (; count < this._max; count++) {
+      let oldPosition = context.position;
+      let result = this._p._parseWith(context);
+      if (isResultOK(result)) {
+        value.push(result.value);
+      } else {
+        if (context.position !== oldPosition || count < this._min) {
+          return result;
+        }
+        break;
+      }
+    }
+
+    return {value};
+  }
+
+  isNullable() {
+    return this._min === 0;
+  }
+
+  _deref(): this {
+    this._p = this._p._getDeref();
+    if (this._p.isNullable()) {
+      throw new Error('Repeat on nullable parser:' + this._p.desc());
+    }
+    return this;
+  }
+
+  _getFirstSet() {
+    return this._p._getFirstSet();
+  }
+
+  desc() {
+    return `${this._p.desc()}.repeat(${this._min},${this._max})`;
   }
 }
