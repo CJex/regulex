@@ -507,3 +507,53 @@ export class Seqs<S extends K.Stream<S[0]>, A extends Array<any>, State, UserErr
     return `Seqs(${seqs})`;
   }
 }
+
+export class Alts<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A, State, UserError> {
+  constructor(private _alts: Array<Parser<S, A, State, UserError>>) {
+    super();
+    if (!_alts.length) throw new Error('Alts can not be empty');
+  }
+
+  _parseWith(context: ParseCtx<S, State, UserError>): SimpleResult<A, UserError> {
+    let plist = this._alts;
+    let len = plist.length;
+    let result;
+    let i = 0;
+    let {position, state} = context;
+    do {
+      result = plist[i]._parseWith(context);
+      if (isResultOK(result) || context.position !== position) return result;
+      context.position = position;
+      context.state = state;
+    } while (++i < len);
+    return result;
+  }
+
+  _checkNullable() {
+    for (let p of this._alts) {
+      if (p.isNullable()) return true;
+    }
+    return false;
+  }
+
+  _deref(): this {
+    for (let i = 0; i < this._alts.length; i++) {
+      this._alts[i] = this._alts[i]._getDeref();
+    }
+    return this;
+  }
+
+  _getFirstSet() {
+    let all: Parser<S, A, State, UserError>[] = [];
+    for (let p of this._alts) {
+      let aset = p._getFirstSet();
+      all = all.concat(aset);
+    }
+    return all;
+  }
+
+  desc() {
+    let alts = this._alts.map(p => p.desc()).join(',');
+    return `Alts(${alts})`;
+  }
+}
