@@ -187,6 +187,10 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
     return this.repeat(1);
   }
 
+  betweens(left: S, right: S): Parser<S, A, State, UserError> {
+    return new Seqs([new Exact<S, State, UserError>(left), this, new Exact<S, State, UserError>(right)]).at(1);
+  }
+
   parse(s: S, initalState: State): ParseResult<A, State, UserError> {
     let context = new ParseCtx<S, State, UserError>(s, initalState);
     let result: any = this._parseWith(context);
@@ -652,5 +656,32 @@ class FailParser<State, UserError> extends Parser<any, never, State, UserError> 
 
   isNullable() {
     return true;
+  }
+}
+
+export class Exact<S extends K.Stream<S[0]>, State, UserError> extends Parser<S, S, State, UserError> {
+  constructor(private _s: S) {
+    super();
+    if (!_s.length) throw new Error('Exact match empty make no sense, please use Parsec.empty instead!');
+  }
+
+  _parseWith(context: ParseCtx<S, State, UserError>): SimpleResult<S, UserError> {
+    let l = this._s.length;
+    let {input, position} = context;
+    let s = input.slice(position, position + l);
+    if (s === this._s || K.deepEqual(s, this._s)) {
+      context.position += l;
+      return {value: this._s};
+    } else {
+      return {error: {position: position, parser: this}};
+    }
+  }
+
+  isNullable() {
+    return false;
+  }
+
+  desc() {
+    return `Exact(${JSON.stringify(this._s)})`;
   }
 }
