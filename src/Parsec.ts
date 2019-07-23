@@ -686,7 +686,32 @@ export class Exact<S extends K.Stream<S[0]>, State, UserError> extends Parser<S,
   }
 }
 
-abstract class CharsetBase<State, UserError> extends Parser<string, string, State, UserError> {
+export interface RegexRepeat<State, UserError> {
+  getRegexSource(): string;
+  repeats(min: number, max: number): Parser<string, string, State, UserError>;
+  counts(n: number): Parser<string, string, State, UserError>;
+}
+
+function _repeats<State, UserError>(
+  this: RegexRepeat<State, UserError>,
+  min = 0,
+  max = Infinity
+): Parser<string, string, State, UserError> {
+  let re = '(?:' + this.getRegexSource() + ')';
+  let quantifier = '{' + min + ',' + (max === Infinity ? '' : max) + '}';
+  let p: MatchRegex<State, UserError> = new MatchRegex(new RegExp(re + quantifier, 'u'));
+  return p.map(m => m[0]);
+}
+
+function _counts<State, UserError>(
+  this: RegexRepeat<State, UserError>,
+  n: number
+): Parser<string, string, State, UserError> {
+  return this.repeats(n, n);
+}
+
+abstract class CharsetBase<State, UserError> extends Parser<string, string, State, UserError>
+  implements RegexRepeat<State, UserError> {
   _parseWith(context: ParseCtx<string, State, UserError>): SimpleResult<string, UserError> {
     let {position, input} = context;
     let cp = input.codePointAt(position);
@@ -704,6 +729,10 @@ abstract class CharsetBase<State, UserError> extends Parser<string, string, Stat
   }
 
   abstract _includeCodePoint(cp: number): boolean;
+  abstract getRegexSource(): string;
+
+  repeats: (min?: number, max?: number) => Parser<string, string, State, UserError> = _repeats;
+  counts: (n: number) => Parser<string, string, State, UserError> = _counts;
 
   isNullable() {
     return false;
@@ -723,6 +752,10 @@ export class CharsetParser<State, UserError> extends CharsetBase<State, UserErro
     return this._charset.includeCodePoint(cp);
   }
 
+  getRegexSource(): string {
+    return this._charset.toRegex().source;
+  }
+
   desc() {
     return `Charset(${JSON.stringify(this._charset.toPattern())})`;
   }
@@ -737,6 +770,10 @@ export class OneOf<State, UserError> extends CharsetBase<State, UserError> {
 
   _includeCodePoint(cp: number): boolean {
     return this._set.has(cp);
+  }
+
+  getRegexSource(): string {
+    return K.Charset.fromCodePoints(Array.from(this._set)).toRegex().source;
   }
 
   desc() {
@@ -754,5 +791,53 @@ export class OneOf<State, UserError> extends CharsetBase<State, UserError> {
 export class NoneOf<State, UserError> extends OneOf<State, UserError> {
   _includeCodePoint(cp: number): boolean {
     return !this._set.has(cp);
+  }
+
+  getRegexSource(): string {
+    return K.Charset.fromCodePoints(Array.from(this._set))
+      .inverted()
+      .toRegex().source;
+  }
+}
+
+export class MatchRegex<State, UserError> extends Parser<string, string[] & RegExpExecArray, State, UserError>
+  implements RegexRepeat<State, UserError> {
+  _re: RegExp;
+  _rawRe: RegExp;
+  constructor(re: RegExp) {
+    super();
+    this._rawRe = re;
+    this._re = new RegExp(re.source, re.flags.replace('y', '') + 'y');
+  }
+
+  _parseWith(context: ParseCtx<string, State, UserError>): SimpleResult<string[] & RegExpExecArray, UserError> {
+    let {input, position} = context;
+    this._re.lastIndex = position;
+    let m = this._re.exec(input);
+    if (m === null) {
+      return {error: {position: position, parser: this}};
+    } else {
+      context.position += m[0].length;
+      return {value: m};
+    }
+  }
+
+  slice(): Parser<string, string, State, UserError> {
+    return this.map(m => m[0]);
+  }
+
+  _checkNullable() {
+    return this._re.test('');
+  }
+
+  repeats: (min?: number, max?: number) => Parser<string, string, State, UserError> = _repeats;
+  counts: (n: number) => Parser<string, string, State, UserError> = _counts;
+
+  getRegexSource(): string {
+    return this._rawRe.source;
+  }
+
+  desc() {
+    return `Regex(${this._rawRe.toString()})`;
   }
 }
