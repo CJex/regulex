@@ -841,3 +841,98 @@ export class MatchRegex<State, UserError> extends Parser<string, string[] & RegE
     return `Regex(${this._rawRe.toString()})`;
   }
 }
+
+interface AnyParserMap {
+  [refName: string]: Parser<any, any, any, any>;
+}
+
+// @private
+class Ref extends Parser<any, any, any, any> {
+  private _p?: Parser<any, any, any, any>;
+  constructor(private _refName: string) {
+    super();
+  }
+
+  resolveRef(ruleMap: AnyParserMap) {
+    let p = ruleMap[this._refName];
+    if (!p) {
+      throw new Error('Referenced rule does not exist: ' + this._refName);
+    }
+    this._p = p;
+  }
+
+  isNullable() {
+    return this._p!.isNullable();
+  }
+  _getFirstSet() {
+    return [this];
+  }
+
+  _getDeref(): Parser<any, any, any, any> {
+    return this._p!._getDeref();
+  }
+
+  _parseWith(...args: any[]): never {
+    throw new Error('Ref Parser ' + this._refName + ' should not be called');
+  }
+}
+
+class LeftRecur<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A, State, UserError> {
+  constructor(private _p: Parser<S, A, State, UserError>) {
+    super();
+    if (_p.isNullable()) throw new Error('LeftRecur on nullable parser:' + _p.desc());
+  }
+  _parseWith(context: ParseCtx<S, State, UserError>): SimpleResult<A, UserError> {
+    let {recurMemo, position, state} = context;
+    let memoMap = recurMemo.get(this);
+    if (!memoMap) {
+      memoMap = new Map();
+      recurMemo.set(this, memoMap);
+    }
+
+    let last = memoMap.get(position);
+
+    if (last) {
+      context.position = last.position;
+      context.state = last.state;
+      return last.result;
+    }
+
+    last = {
+      position: position,
+      state: state,
+      result: {error: {position: position, parser: this}}
+    };
+    memoMap.set(position, last);
+
+    while (true) {
+      context.position = position;
+      context.state = state;
+      let result = this._p._parseWith(context);
+      if (context.position <= last.position) {
+        return last.result;
+      } else if (!isResultOK(result)) {
+        return result;
+      }
+      last.result = result;
+      last.position = context.position;
+    }
+  }
+
+  isNullable(): boolean {
+    return false;
+  }
+
+  _deref(): this {
+    this._p = this._p._getDeref();
+    return this;
+  }
+
+  _getFirstSet() {
+    return this._p._getFirstSet();
+  }
+
+  desc() {
+    return 'Recur(' + this._p.desc() + ')';
+  }
+}
