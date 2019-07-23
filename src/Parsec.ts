@@ -685,3 +685,74 @@ export class Exact<S extends K.Stream<S[0]>, State, UserError> extends Parser<S,
     return `Exact(${JSON.stringify(this._s)})`;
   }
 }
+
+abstract class CharsetBase<State, UserError> extends Parser<string, string, State, UserError> {
+  _parseWith(context: ParseCtx<string, State, UserError>): SimpleResult<string, UserError> {
+    let {position, input} = context;
+    let cp = input.codePointAt(position);
+    if (typeof cp === 'undefined') {
+      return {
+        error: {position: position, parser: this, message: 'EOF'}
+      };
+    } else if (this._includeCodePoint(cp)) {
+      let c = String.fromCodePoint(cp);
+      context.position += c.length;
+      return {value: c};
+    } else {
+      return {error: {position: position, parser: this}};
+    }
+  }
+
+  abstract _includeCodePoint(cp: number): boolean;
+
+  isNullable() {
+    return false;
+  }
+
+  _getDeref() {
+    return this;
+  }
+}
+
+export class CharsetParser<State, UserError> extends CharsetBase<State, UserError> {
+  constructor(private _charset: K.Charset) {
+    super();
+  }
+
+  _includeCodePoint(cp: number): boolean {
+    return this._charset.includeCodePoint(cp);
+  }
+
+  desc() {
+    return `Charset(${JSON.stringify(this._charset.toPattern())})`;
+  }
+}
+
+export class OneOf<State, UserError> extends CharsetBase<State, UserError> {
+  _set: Set<number>;
+  constructor(a: string) {
+    super();
+    this._set = new Set(Array.from(a).map(K.Char.ord));
+  }
+
+  _includeCodePoint(cp: number): boolean {
+    return this._set.has(cp);
+  }
+
+  desc() {
+    return (
+      this.constructor.name +
+      `(${JSON.stringify(
+        Array.from(this._set)
+          .map(K.Char.chr)
+          .join('')
+      )})`
+    );
+  }
+}
+
+export class NoneOf<State, UserError> extends OneOf<State, UserError> {
+  _includeCodePoint(cp: number): boolean {
+    return !this._set.has(cp);
+  }
+}
