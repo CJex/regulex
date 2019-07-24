@@ -1,5 +1,6 @@
 import * as K from './Kit';
 import {Err, Result, isResultOK} from './Kit';
+import {$Values} from 'utility-types';
 
 /**
 Not Really Parser Combinator
@@ -934,5 +935,134 @@ class LeftRecur<S extends K.Stream<S>, A, State, UserError> extends Parser<S, A,
 
   desc() {
     return 'Recur(' + this._p.desc() + ')';
+  }
+}
+
+export interface GrammarMainDef<S extends K.Stream<S>, A, State, UserError> {
+  Main: ParserDef<S, A, State, UserError>;
+}
+
+export type RecurParserDef<S extends K.Stream<S>, A, State, UserError> = () => Parser<S, A, State, UserError>;
+export type ParserDef<S extends K.Stream<S>, A, State, UserError> =
+  | Parser<S, A, State, UserError>
+  | RecurParserDef<S, A, State, UserError>;
+
+export type ParserUndef<F> = F extends (() => infer P) ? P : F extends Parser<any, any, any, any> ? F : never;
+
+export type FilterParserField<T> = {
+  [K in keyof T]: T[K] extends Function | Parser<any, any, any, any> ? K : never;
+}[keyof T];
+
+export type GrammarRuleMap<T> = {
+  [K in FilterParserField<T>]: ParserUndef<T[K]>; // Distribute to ParserUndef
+};
+
+export type GrammarDefTypes<T> = $Values<GrammarRuleMap<T>> extends Parser<
+  infer Stream,
+  infer Result,
+  infer State,
+  infer UserError
+>
+  ? [Stream, Result, State, UserError]
+  : never;
+
+interface AnyParserDefMap {
+  [refName: string]: ParserDef<any, any, any, any>;
+}
+
+const _objectPrototypePropertyNames = new Set(Object.getOwnPropertyNames(Object.prototype));
+/**
+ * Get object all available property names,include its prototype chain but exclude top Object.prototype
+ */
+function getDefRuleNames(a: any): string[] {
+  let names: string[] = [];
+  let proto = a;
+  while (proto && proto !== Object.prototype) {
+    names = names.concat(Object.getOwnPropertyNames(proto));
+    proto = Object.getPrototypeOf(proto);
+  }
+  names = names.filter(n => !_objectPrototypePropertyNames.has(n));
+  return K.sortUnique(names);
+}
+
+export class Grammar<T> {
+  readonly rules: GrammarRuleMap<T>;
+  private constructor(_rawDef: T) {
+    let rawDef = (_rawDef as unknown) as AnyParserDefMap;
+
+    let ruleNames = getDefRuleNames(_rawDef).filter(k => rawDef[k] instanceof Function || rawDef[k] instanceof Parser);
+    let ruleMap: AnyParserMap = Object.create(null);
+    let thisObject: AnyParserDefMap = Object.create(null);
+    let refMap: {[ruleName: string]: Ref} = Object.create(null);
+
+    for (let k of ruleNames) {
+      let p = rawDef[k];
+      if (typeof p === 'function') {
+        refMap[k] = new Ref(k);
+        thisObject[k] = () => refMap[k];
+      } else {
+        thisObject[k] = p;
+      }
+    }
+
+    for (let k of ruleNames) {
+      let df = rawDef[k];
+      let p;
+      if (typeof df === 'function') {
+        p = df.call(thisObject);
+        if (!(p instanceof Parser)) {
+          throw new TypeError(`Grammar Definition clause "${k}" function must return Parser`);
+        }
+      } else {
+        p = df;
+      }
+
+      if (p instanceof Parser) {
+        // Allow extra utility non parser property in grammar class
+        ruleMap[k] = p;
+      }
+    }
+
+    let refNames = Object.getOwnPropertyNames(refMap);
+
+    for (let k of refNames) {
+      refMap[k].resolveRef(ruleMap);
+    }
+
+    for (let k of ruleNames) {
+      // Fix left recursion
+      let firstSet = ruleMap[k]._getFirstSet();
+      let selfRef = refMap[k];
+      if (firstSet.includes(selfRef)) {
+        ruleMap[k] = new LeftRecur(ruleMap[k]);
+      }
+    }
+
+    for (let k of refNames) {
+      refMap[k].resolveRef(ruleMap);
+    }
+
+    for (let k of ruleNames) {
+      ruleMap[k] = ruleMap[k]._getDeref();
+    }
+
+    this.rules = <any>ruleMap;
+  }
+
+  parseWithState: T extends GrammarMainDef<infer S, infer A, infer State, infer UserError>
+    ? (s: S, initalState: State) => ParseResult<A, State, UserError>
+    : never = ((s: any, initalState: any = null) => {
+    let rules = this.rules as any;
+    if (rules.Main) {
+      return rules.Main.parse(s, initalState);
+    }
+  }) as any;
+
+  parse: T extends GrammarMainDef<infer S, infer A, null, infer UserError>
+    ? (s: S) => ParseResult<A, null, UserError>
+    : never = this.parseWithState as any;
+
+  static def<T>(rawDef: T): $Values<GrammarRuleMap<T>> extends Parser<any, any, any, any> ? Grammar<T> : never {
+    return new Grammar(rawDef as any) as any;
   }
 }
