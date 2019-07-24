@@ -24,7 +24,7 @@ export type ParseResult<A, State, UserError> = Result<A, ParseError<UserError>> 
   state: State;
 };
 
-class ParseCtx<S extends K.Stream<S[0]>, State, UserError> {
+class ParseCtx<S extends K.Stream<S>, State, UserError> {
   public position: number = 0;
   // A shared and mutable range field.
   // So we can directly convert ParseCtx to TokenCtx and avoid temp object;
@@ -52,7 +52,7 @@ export interface TokenCtx<S, State> {
   state: State;
 }
 
-export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
+export abstract class Parser<S extends K.Stream<S>, A, State, UserError> {
   /**
   Map result value. Changing state in the map function is allowed, ensure yourself the parser is unrecoverable.
   (Why that? Because we don't have *REAL* immutable data type.)
@@ -132,7 +132,7 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
   }
 
   slice(): Parser<S, S, State, UserError> {
-    return this.map((_, ctx) => <S>ctx.input.slice(ctx.range[0], ctx.range[1]));
+    return this.map((_, ctx) => ctx.input.slice(ctx.range[0], ctx.range[1]));
   }
 
   opt(): Optional<S, A, State, UserError> {
@@ -249,7 +249,7 @@ export abstract class Parser<S extends K.Stream<S[0]>, A, State, UserError> {
 }
 
 export type FResult<A, UserError> = Result<A, UserError | string | true> & {consumed: number};
-export class FParser<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A, State, UserError> {
+export class FParser<S extends K.Stream<S>, A, State, UserError> extends Parser<S, A, State, UserError> {
   constructor(
     private _f: (context: {
       readonly input: S;
@@ -282,7 +282,7 @@ export class FParser<S extends K.Stream<S[0]>, A, State, UserError> extends Pars
   }
 }
 
-class MapF<S extends K.Stream<S[0]>, A, B, State, UserError> extends Parser<S, B, State, UserError> {
+class MapF<S extends K.Stream<S>, A, B, State, UserError> extends Parser<S, B, State, UserError> {
   private constructor(
     private _p: Parser<S, A, State, any>,
     private _f: (v: SimpleResult<A, UserError>, ctx: TokenCtx<S, State>) => SimpleResult<B, UserError>
@@ -290,7 +290,7 @@ class MapF<S extends K.Stream<S[0]>, A, B, State, UserError> extends Parser<S, B
     super();
   }
 
-  static compose<S extends K.Stream<S[0]>, A, B, State, UserError>(
+  static compose<S extends K.Stream<S>, A, B, State, UserError>(
     p: Parser<S, A, State, UserError>,
     f: (v: SimpleResult<A, UserError>, ctx: TokenCtx<S, State>) => SimpleResult<B, UserError>
   ): MapF<S, A, B, State, UserError> {
@@ -335,7 +335,7 @@ class MapF<S extends K.Stream<S[0]>, A, B, State, UserError> extends Parser<S, B
   }
 }
 
-export class StateF<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A, State, UserError> {
+export class StateF<S extends K.Stream<S>, A, State, UserError> extends Parser<S, A, State, UserError> {
   constructor(private _p: Parser<S, A, State, UserError>, private _f: (st: State, ctx: TokenCtx<S, State>) => State) {
     super();
   }
@@ -364,7 +364,7 @@ export class StateF<S extends K.Stream<S[0]>, A, State, UserError> extends Parse
   }
 }
 
-export class Optional<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, K.Maybe<A>, State, UserError> {
+export class Optional<S extends K.Stream<S>, A, State, UserError> extends Parser<S, K.Maybe<A>, State, UserError> {
   constructor(private _p: Parser<S, A, State, UserError>) {
     super();
   }
@@ -392,7 +392,7 @@ export class Optional<S extends K.Stream<S[0]>, A, State, UserError> extends Par
   }
 }
 
-export class TryParser<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A, State, UserError> {
+export class TryParser<S extends K.Stream<S>, A, State, UserError> extends Parser<S, A, State, UserError> {
   constructor(private _p: Parser<S, A, State, UserError>) {
     super();
   }
@@ -420,7 +420,7 @@ export class TryParser<S extends K.Stream<S[0]>, A, State, UserError> extends Pa
   }
 }
 
-export class Lookahead<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A, State, UserError> {
+export class Lookahead<S extends K.Stream<S>, A, State, UserError> extends Parser<S, A, State, UserError> {
   constructor(
     private _p: Parser<S, A, State, UserError>,
     private _look: Parser<S, any, State, UserError>,
@@ -460,7 +460,7 @@ export class Lookahead<S extends K.Stream<S[0]>, A, State, UserError> extends Pa
   }
 }
 
-export class Seqs<S extends K.Stream<S[0]>, A extends Array<any>, State, UserError> extends Parser<
+export class Seqs<S extends K.Stream<S>, A extends Array<any>, State, UserError> extends Parser<
   S,
   A,
   State,
@@ -527,7 +527,7 @@ export class Seqs<S extends K.Stream<S[0]>, A extends Array<any>, State, UserErr
   }
 }
 
-export class Alts<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A, State, UserError> {
+export class Alts<S extends K.Stream<S>, A, State, UserError> extends Parser<S, A, State, UserError> {
   constructor(private _alts: Array<Parser<S, A, State, UserError>>) {
     super();
     if (!_alts.length) throw new Error('Alts can not be empty');
@@ -577,7 +577,7 @@ export class Alts<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<
   }
 }
 
-export class Repeat<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A[], State, UserError> {
+export class Repeat<S extends K.Stream<S>, A, State, UserError> extends Parser<S, A[], State, UserError> {
   constructor(private _p: Parser<S, A, State, UserError>, private _min: number = 0, private _max: number = Infinity) {
     super();
   }
@@ -659,7 +659,7 @@ class FailParser<State, UserError> extends Parser<any, never, State, UserError> 
   }
 }
 
-export class Exact<S extends K.Stream<S[0]>, State, UserError> extends Parser<S, S, State, UserError> {
+export class Exact<S extends K.Stream<S>, State, UserError> extends Parser<S, S, State, UserError> {
   constructor(private _s: S) {
     super();
     if (!_s.length) throw new Error('Exact match empty make no sense, please use Parsec.empty instead!');
@@ -877,7 +877,7 @@ class Ref extends Parser<any, any, any, any> {
   }
 }
 
-class LeftRecur<S extends K.Stream<S[0]>, A, State, UserError> extends Parser<S, A, State, UserError> {
+class LeftRecur<S extends K.Stream<S>, A, State, UserError> extends Parser<S, A, State, UserError> {
   constructor(private _p: Parser<S, A, State, UserError>) {
     super();
     if (_p.isNullable()) throw new Error('LeftRecur on nullable parser:' + _p.desc());

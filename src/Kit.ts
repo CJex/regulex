@@ -38,14 +38,14 @@ export interface Comparator<A> {
 }
 
 /**
-Usage: function f<S extends Stream<S[0]>>(s:S):S {return s}
+Usage: function f<S extends Stream<S>>(s:S):S {return s.slice()}
 */
-export interface Stream<S> {
-  readonly [index: number]: S;
+export interface Stream<S extends {readonly [index: number]: S[number]}> {
+  readonly [index: number]: S[number];
   length: number;
-  slice(): Stream<S>;
-  slice(start: number): Stream<S>;
-  slice(start: number, end: number): Stream<S>;
+  slice(): S;
+  slice(start: number): S;
+  slice(start: number, end: number): S;
 }
 
 export function compare<T>(a: T, b: T): Ordering {
@@ -54,7 +54,7 @@ export function compare<T>(a: T, b: T): Ordering {
   return Ordering.EQ;
 }
 
-export function compareArray<T>(a1: Stream<T>, a2: Stream<T>, cmp: Comparator<T> = compare): Ordering {
+export function compareArray<S extends Stream<S>>(a1: S, a2: S, cmp: Comparator<S[number]> = compare): Ordering {
   let l1 = a1.length;
   let l2 = a2.length;
   if (!l1 && !l2) return Ordering.EQ;
