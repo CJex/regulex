@@ -1066,3 +1066,89 @@ export class Grammar<T> {
     return new Grammar(rawDef as any) as any;
   }
 }
+
+/**
+We have to pre-specify these generic types due to TypeScript lacks of value polymorphism
+*/
+export function refine<S extends K.Stream<S>, State, UserError>() {
+  const spaces = re(/\s*/);
+
+  /**
+  Parse by a custom function, it must return a consumed number in order to increase the position
+  */
+  function parseBy<A, _S extends K.Stream<_S> = S, St = State, UErr = UserError>(
+    f: (context: {readonly input: _S; readonly position: number; readonly state: St}) => FResult<A, UErr>
+  ) {
+    return new FParser(f);
+  }
+
+  function getState<St = State, UErr = UserError>(): Parser<any, St, St, UErr> {
+    return parseBy(ctx => ({value: ctx.state, consumed: 0}));
+  }
+
+  function re<St = State, UErr = UserError>(re: RegExp): MatchRegex<St, UErr> {
+    return new MatchRegex(re);
+  }
+
+  return {
+    re,
+    parseBy,
+    getState,
+    empty: new Empty<State, UserError>(),
+    eof: new EOF<State, UserError>(),
+    digit: re(/\d/).slice(),
+    digits: re(/\d*/).slice(),
+    digits1: re(/\d+/).slice(),
+
+    hexDigit: re(/[A-F0-9]/i).slice(),
+    hexDigits: re(/[A-F0-9]*/i).slice(),
+    hexDigits1: re(/[A-F0-9]+/i).slice(),
+
+    letter: re(/[A-Z]/i).slice(),
+    letters: re(/[A-Z]*/i).slice(),
+    letters1: re(/[A-Z]+/).slice(),
+    spaces,
+    spaces1: re(/\s+/),
+
+    pure<A, St = State, UErr = UserError>(a: A): Parser<any, A, St, UErr> {
+      return parseBy(_ => ({value: a, consumed: 0}));
+    },
+
+    anyChar: new FParser<string, string, State, UserError>(ctx => {
+      let cp = ctx.input.codePointAt(ctx.position);
+      if (typeof cp === 'undefined') {
+        return {error: 'EOF', consumed: 0};
+      } else {
+        let c = String.fromCodePoint(cp);
+        return {
+          value: c,
+          consumed: c.length
+        };
+      }
+    }),
+
+    oneOf<St = State, UErr = UserError>(a: string): OneOf<St, UErr> {
+      return new OneOf(a);
+    },
+
+    noneOf<St = State, UErr = UserError>(a: string): NoneOf<St, UErr> {
+      return new NoneOf(a);
+    },
+
+    exact<_S extends K.Stream<_S> = S, St = State, UErr = UserError>(s: _S): Exact<_S, St, UErr> {
+      return new Exact(s);
+    },
+
+    charset<St = State, UErr = UserError>(ch: K.Charset): CharsetParser<St, UErr> {
+      return new CharsetParser(ch);
+    },
+
+    fails<St = State, UErr = UserError>(msg: string): Parser<any, never, St, UErr> {
+      return new FailParser(msg);
+    },
+
+    failWith<St = State, UErr = UserError>(err: UErr): Parser<any, never, St, UErr> {
+      return new FailParser('UserError', err);
+    }
+  };
+}
