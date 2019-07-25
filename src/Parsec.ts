@@ -192,6 +192,13 @@ export abstract class Parser<S extends K.Stream<S>, A, State, UserError> {
     return new Seqs([new Exact<S, State, UserError>(left), this, new Exact<S, State, UserError>(right)]).at(1);
   }
 
+  /**
+  Restricted monad bind, function f can not return Ref reference to other parsers
+  */
+  thenF<B>(f: (a: A, ctx: TokenCtx<S, State>) => Parser<S, B, State, UserError>): Parser<S, B, State, UserError> {
+    return new ThenF(this, f);
+  }
+
   parse(s: S, initalState: State): ParseResult<A, State, UserError> {
     let context = new ParseCtx<S, State, UserError>(s, initalState);
     let result: any = this._parseWith(context);
@@ -362,6 +369,44 @@ export class StateF<S extends K.Stream<S>, A, State, UserError> extends Parser<S
 
   _getFirstSet() {
     return this._p._getFirstSet();
+  }
+}
+
+/**
+Restricted Monad bind, function f can not return Ref reference to other parsers, in this way we dont need to check LeftRecur in parsing
+*/
+export class ThenF<S extends K.Stream<S>, A, B, State, UserError> extends Parser<S, B, State, UserError> {
+  constructor(
+    private _p: Parser<S, A, State, UserError>,
+    private _f: (a: A, st: TokenCtx<S, State>) => Parser<S, B, State, UserError>
+  ) {
+    super();
+  }
+
+  _parseWith(context: ParseCtx<S, State, UserError>): SimpleResult<B, UserError> {
+    let position = context.position;
+    let result = this._p._parseWith(context);
+    if (isResultOK(result)) {
+      let tokenCtx: TokenCtx<S, State> = context;
+      tokenCtx.range = [position, context.position];
+      let nextP = this._f(result.value, tokenCtx);
+      let nextResult = nextP._parseWith(context);
+      return nextResult;
+    }
+    return result;
+  }
+
+  _deref(): this {
+    this._p = this._p._getDeref();
+    return this;
+  }
+
+  _getFirstSet() {
+    return this._p.isNullable() ? [] : this._p._getFirstSet();
+  }
+
+  _checkNullable(): boolean {
+    return this._p.isNullable();
   }
 }
 
