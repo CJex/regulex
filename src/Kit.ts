@@ -12,6 +12,9 @@ export const enum Ordering {
 
 export type Maybe<T> = T | undefined;
 
+/** Union to Intersection */
+export type InterU<U> = (U extends any ? (a: U) => 0 : never) extends ((a: infer I) => 0) ? I : never;
+
 export type OK<T> = {value: T};
 export type Err<E> = {error: E};
 

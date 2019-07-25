@@ -1,5 +1,5 @@
 import * as K from './Kit';
-import {Err, Result, isResultOK} from './Kit';
+import {Err, Result, isResultOK, InterU} from './Kit';
 import {$Values} from 'utility-types';
 
 /**
@@ -1161,146 +1161,51 @@ export function refine<S extends K.Stream<S>, State, UserError>() {
   };
 
   function alts(): never;
-  function alts(a: any): never;
-  function alts<S extends K.Stream<S>, A1, A2, St = State, UErr = UserError>(
-    ...parsers: [Parser<S, A1, St, UErr>, Parser<S, A2, St, UErr>]
-  ): Alts<S, A1 | A2, St, UErr>;
-  function alts<S extends K.Stream<S>, A1, A2, A3, St = State, UErr = UserError>(
-    ...parsers: [Parser<S, A1, St, UErr>, Parser<S, A2, St, UErr>, Parser<S, A3, St, UErr>]
-  ): Alts<S, A1 | A2 | A3, St, UErr>;
-  function alts<S extends K.Stream<S>, A1, A2, A3, A4, St = State, UErr = UserError>(
-    ...parsers: [Parser<S, A1, St, UErr>, Parser<S, A2, St, UErr>, Parser<S, A3, St, UErr>, Parser<S, A4, St, UErr>]
-  ): Alts<S, A1 | A2 | A3 | A4, St, UErr>;
-  function alts<S extends K.Stream<S>, A1, A2, A3, A4, A5, St = State, UErr = UserError>(
-    ...parsers: [
-      Parser<S, A1, St, UErr>,
-      Parser<S, A2, St, UErr>,
-      Parser<S, A3, St, UErr>,
-      Parser<S, A4, St, UErr>,
-      Parser<S, A5, St, UErr>
-    ]
-  ): Alts<S, A1 | A2 | A3 | A4 | A5, St, UErr>;
-  function alts<S extends K.Stream<S>, A, St = State, UErr = UserError>(
-    ...parsers: Array<Parser<S, A, St, UErr>>
-  ): Alts<S, A, St, UErr>;
-  function alts<S extends K.Stream<S>, A, St = State, UErr = UserError>(
-    ...parsers: Array<Parser<S, A, St, UErr>>
-  ): Alts<S, A, St, UErr> {
+  function alts(p: any): never;
+  function alts<A extends [any, any, ...any[]], _S extends K.Stream<_S> = S, St = State, UErr = UserError>(
+    ...parsers: {[I in keyof A]: Parser<_S, A[I], St, UErr>}
+  ): Alts<_S, A[number], St, UErr>;
+  function alts<T, _S extends K.Stream<_S> = S, St = State, UErr = UserError>(
+    ...parsers: Array<Parser<_S, T, St, UErr>>
+  ): Alts<_S, T, St, UErr>;
+  function alts<_S extends K.Stream<_S> = S, St = State, UErr = UserError>(...parsers: any): Alts<_S, any, St, UErr> {
     return new Alts(parsers);
   }
 
   function seqs(): never;
-  function seqs(x: any): never;
-  function seqs<S extends K.Stream<S>, A1, A2, St = State, UErr = UserError>(
-    ...parsers: [Parser<S, A1, St, UErr>, Parser<S, A2, St, UErr>]
-  ): Seqs<S, [A1, A2], St, UErr>;
-  function seqs<S extends K.Stream<S>, A1, A2, A3, St = State, UErr = UserError>(
-    ...parsers: [Parser<S, A1, St, UErr>, Parser<S, A2, St, UErr>, Parser<S, A3, St, UErr>]
-  ): Seqs<S, [A1, A2, A3], St, UErr>;
-  function seqs<S extends K.Stream<S>, A1, A2, A3, A4, St = State, UErr = UserError>(
-    ...parsers: [Parser<S, A1, St, UErr>, Parser<S, A2, St, UErr>, Parser<S, A3, St, UErr>, Parser<S, A4, St, UErr>]
-  ): Seqs<S, [A1, A2, A3, A4], St, UErr>;
-  function seqs<S extends K.Stream<S>, A1, A2, A3, A4, A5, St = State, UErr = UserError>(
-    ...parsers: [
-      Parser<S, A1, St, UErr>,
-      Parser<S, A2, St, UErr>,
-      Parser<S, A3, St, UErr>,
-      Parser<S, A4, St, UErr>,
-      Parser<S, A5, St, UErr>
-    ]
-  ): Seqs<S, [A1, A2, A3, A4, A5], St, UErr>;
-  function seqs<S extends K.Stream<S>, A, St = State, UErr = UserError>(
-    ...parsers: Array<Parser<S, A, St, UErr>>
-  ): Seqs<S, A[], St, UErr>;
-  function seqs<S extends K.Stream<S>, St = State, UErr = UserError>(
-    ...parsers: Array<Parser<S, any, St, UErr>>
-  ): Seqs<S, any[], St, UErr>;
-  function seqs<S extends K.Stream<S>, St = State, UErr = UserError>(
-    ...parsers: Array<Parser<S, any, St, UErr>>
-  ): Seqs<S, any[], St, UErr> {
+  function seqs(p: any): never;
+  function seqs<A extends [any, any, ...any[]], _S extends K.Stream<_S> = S, St = State, UErr = UserError>(
+    ...parsers: {[I in keyof A]: Parser<_S, A[I], St, UErr>}
+  ): Seqs<_S, A, St, UErr>;
+  function seqs<T, _S extends K.Stream<_S> = S, St = State, UErr = UserError>(
+    ...parsers: Array<Parser<_S, T, St, UErr>>
+  ): Seqs<_S, T[], St, UErr>;
+  function seqs<_S extends K.Stream<_S> = S, St = State, UErr = UserError>(...parsers: any): Seqs<_S, any, St, UErr> {
     return new Seqs(parsers);
   }
 
   /**
   Let bind, we had to disperse each let binding into single object literal because of JavaScript object literal does not guarentee the order of key.
   @example
-    bind(
-      {name:re(/[A-Z_$]\w{0,}/i).slice()},
-      {_:exact('=')},
-      {value:digits1}
-    )
+    const P = Parsec.refine<string, 'State', 'SyntaxError'>();
+    let p: Parser<string, {name: string; value: number}, 'State', 'SyntaxError'> = P.bind(
+      {name: P.re(/[A-Z_$]\w{0,}/i).slice()},
+      {_: P.exact('=')},
+      {value: P.digits1.map(Number)}
+    );
   */
   function bind(): never;
-  function bind<S extends K.Stream<S>, K1 extends string, A1, St = State, UErr = UserError>(
-    p1: {[k in K1]: Parser<S, A1, St, UErr>}
-  ): Parser<S, {[k in K1]: A1}, St, UErr>;
-  function bind<S extends K.Stream<S>, K1 extends string, K2 extends string, A1, A2, St = State, UErr = UserError>(
-    p1: {[k in K1]: Parser<S, A1, St, UErr>},
-    p2: {[k in K2]: Parser<S, A2, St, UErr>}
-  ): Parser<S, {[k1 in K1]: A1} & {[k2 in K2]: A2}, St, UErr>;
-  function bind<
-    S extends K.Stream<S>,
-    K1 extends string,
-    K2 extends string,
-    K3 extends string,
-    A1,
-    A2,
-    A3,
-    St = State,
-    UErr = UserError
-  >(
-    p1: {[k in K1]: Parser<S, A1, St, UErr>},
-    p2: {[k in K2]: Parser<S, A2, St, UErr>},
-    p3: {[k in K3]: Parser<S, A3, St, UErr>}
-  ): Parser<S, {[k in K1]: A1} & {[k in K2]: A2} & {[k in K3]: A3}, St, UErr>;
-  function bind<
-    S extends K.Stream<S>,
-    K1 extends string,
-    K2 extends string,
-    K3 extends string,
-    K4 extends string,
-    A1,
-    A2,
-    A3,
-    A4,
-    St = State,
-    UErr = UserError
-  >(
-    p1: {[k in K1]: Parser<S, A1, St, UErr>},
-    p2: {[k in K2]: Parser<S, A2, St, UErr>},
-    p3: {[k in K3]: Parser<S, A3, St, UErr>},
-    p4: {[k in K4]: Parser<S, A4, St, UErr>}
-  ): Parser<S, {[k in K1]: A1} & {[k in K2]: A2} & {[k in K3]: A3} & {[k in K4]: A4}, St, UErr>;
-  function bind<
-    S extends K.Stream<S>,
-    K1 extends string,
-    K2 extends string,
-    K3 extends string,
-    K4 extends string,
-    K5 extends string,
-    A1,
-    A2,
-    A3,
-    A4,
-    A5,
-    St = State,
-    UErr = UserError
-  >(
-    p1: {[k in K1]: Parser<S, A1, St, UErr>},
-    p2: {[k in K2]: Parser<S, A2, St, UErr>},
-    p3: {[k in K3]: Parser<S, A3, St, UErr>},
-    p4: {[k in K4]: Parser<S, A4, St, UErr>},
-    p5: {[k in K5]: Parser<S, A5, St, UErr>}
-  ): Parser<S, {[k in K1]: A1} & {[k in K2]: A2} & {[k in K3]: A3} & {[k in K4]: A4} & {[k in K5]: A5}, St, UErr>;
-  function bind<S extends K.Stream<S>, K extends string, A, St = State, UErr = UserError>(
-    ...bindings: Array<{[k in K]: Parser<S, A, St, UErr>}>
-  ): Parser<S, {[k in K]: A}, St, UErr>;
-  function bind<S extends K.Stream<S>, K extends string, St = State, UErr = UserError>(
-    ...bindings: Array<{[k in K]: Parser<S, any, St, UErr>}>
-  ): Parser<S, {[k in K]: any}, St, UErr>;
-  function bind<S extends K.Stream<S>, K extends string, St = State, UErr = UserError>(
-    ...bindings: Array<{[k in K]: Parser<S, any, St, UErr>}>
-  ): Parser<S, {[k in K]: any}, St, UErr> {
+  function bind<M extends [any, ...any[]], _S extends K.Stream<_S> = S, St = State, UErr = UserError>(
+    ...bindings: {[I in keyof M]: {[K in keyof M[I]]: Parser<_S, M[I][K], St, UErr>}}
+  ): Parser<_S, {[K in keyof InterU<M[number]>]: InterU<M[number]>[K]}, St, UErr>;
+  function bind<A, _S extends K.Stream<_S> = S, St = State, UErr = UserError>(
+    ...bindings: Array<{[k: string]: Parser<_S, A, St, UErr>}>
+  ): Parser<_S, {[k: string]: A}, St, UErr>;
+  function bind<_S extends K.Stream<_S> = S, St = State, UErr = UserError>(
+    ..._bindings: any
+  ): Parser<_S, any, St, UErr> {
+    let bindings = _bindings as Array<{[k: string]: Parser<_S, any, St, UErr>}>;
+
     let {names, parsers} = bindings.reduce(
       (prev, cur) => {
         prev.names = prev.names.concat(Object.keys(cur));
@@ -1308,13 +1213,13 @@ export function refine<S extends K.Stream<S>, State, UserError>() {
 
         return prev;
       },
-      {names: [] as string[], parsers: [] as Array<Parser<S, any, St, UErr>>}
+      {names: [] as string[], parsers: [] as Array<Parser<_S, any, St, UErr>>}
     );
 
     let seq = new Seqs(parsers).map(values => {
-      let a: {[k in K]: any} = {} as any;
+      let a: {[k: string]: any} = {} as any;
       for (let i = 0; i < names.length; i++) {
-        a[names[i] as K] = values[i];
+        a[names[i]] = values[i];
       }
       return a;
     });
