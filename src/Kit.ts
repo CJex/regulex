@@ -15,6 +15,20 @@ export type Maybe<T> = T | undefined;
 /** Union to Intersection */
 export type InterU<U> = (U extends any ? (a: U) => 0 : never) extends ((a: infer I) => 0) ? I : never;
 
+/**
+Transform (A => B | A => C) to (A => B|C)
+*/
+export type UnionF<F> = [F] extends [Function]
+  ? [F] extends [(...a: infer A) => infer B]
+    ? (...a: A) => B
+    : never
+  : F;
+
+/** Index Signature */
+export function IndexSig<T, K extends keyof T & string>(a: T): {[k: string]: UnionF<T[K]>} {
+  return a as any;
+}
+
 export type OK<T> = {value: T};
 export type Err<E> = {error: E};
 

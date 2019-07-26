@@ -121,9 +121,8 @@ function isNumber(n: any) {
   return Object.prototype.toString.call(n) === '[object Number]';
 }
 
-type Char = string;
-export function sampleInCharRange(range: K.CharRangeRepr, maxCount = 100): Char[] {
-  let chars: Char[] = [];
+export function sampleInCharRange(range: K.CharRangeRepr, maxCount = 100): string[] {
+  let chars: string[] = [];
   let minCodePoint = K.CharRange.begin(range);
   let maxCodePoint = K.CharRange.end(range);
   let flip = true;
@@ -131,6 +130,20 @@ export function sampleInCharRange(range: K.CharRangeRepr, maxCount = 100): Char[
     let cp = flip ? minCodePoint++ : maxCodePoint--;
     chars.push(String.fromCodePoint(cp));
     flip = !flip;
+  }
+  return chars;
+}
+
+export function sampleInCharset(charset: K.Charset, maxCount = 100): string[] {
+  let chars: string[] = [];
+  let flip = true;
+  let ranges = charset.ranges.slice();
+  while (maxCount > 0 && ranges.length) {
+    let r = flip ? ranges.pop()! : ranges.shift()!;
+    flip = !flip;
+    let s = sampleInCharRange(r, maxCount);
+    maxCount -= s.length;
+    chars = chars.concat(s);
   }
   return chars;
 }
