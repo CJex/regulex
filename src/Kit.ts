@@ -336,6 +336,10 @@ export function enumNum(begin: number, end: number): number[] {
   return a;
 }
 
+export function invertMap<K, V>(m: Map<K, V>): Map<V, K> {
+  return new Map(Array.from(m).map(kv => kv.reverse() as [V, K]));
+}
+
 const _excludeSignCodePoint = 94; //ord('^');
 const _hyphenCodePoint = 45; // ord('-');
 const _escapeCodePoint = 92; // ord('\\');
