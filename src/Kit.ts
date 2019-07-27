@@ -1,3 +1,5 @@
+import * as UT from 'utility-types';
+
 /**
 Caution: TypeScript enum is compatible with number!
 
@@ -15,6 +17,104 @@ export type Maybe<T> = T | undefined;
 /** Union to Intersection */
 export type InterU<U> = (U extends any ? (a: U) => 0 : never) extends ((a: infer I) => 0) ? I : never;
 
+export type ArrayIndex<T> = Exclude<keyof T, Extract<keyof any[], string>>;
+
+export type Equal<A, B> = A extends B ? (B extends A ? true : false) : false;
+
+/**
+Substitude Type A to B in Type Expr E recursively.
+@param InferInter  Whether infer intersection type, only works when A is TypeVar.
+*/
+export type Subst<E, A, B, InferInter = false> = InferInter extends true
+  ? (E extends A & infer X ? B & (X extends A ? unknown : X) : SubstIn<E, A, B, true>)
+  : (E extends A ? B : SubstIn<E, A, B, false>);
+
+/**
+SubstIn is same as Subst except it wont replace top E.
+@example
+  type T = number | {body: T};
+  let a: SubstIn<T, T, Date>; a = 1; a = {body: new Date()};
+  let b: Subst<T, T, Date>; b = new Date();
+*/
+export type SubstIn<E, A, B, InferInter = false> =
+  // First check extends Primitive in order to distribute over union types
+  // Subst unknown check if E does not contain type A, then preserve its type name
+  // Thus SubstIn<A[] | X, B> will preserve type name X if X does not contain type A
+  E extends UT.Primitive ? E : _SubstIn<E, A, unknown, InferInter> extends E ? E : _SubstIn<E, A, B, InferInter>;
+
+type _SubstIn<E, A, B, InferInter> = E extends (...a: infer Params) => infer Ret
+  ? (...a: _SubstIn<Params, A, B, InferInter>) => Subst<Ret, A, B, InferInter>
+  : E extends [any, ...any[]]
+  ? SubstRecord<E, A, B, InferInter>
+  : E extends Array<infer X>
+  ? SubstArray<X, A, B, InferInter>
+  : SubstRecord<E, A, B, InferInter>;
+
+export type SubstRecord<E, A, B, InferInter> = {[K in keyof E]: Subst<E[K], A, B, InferInter>};
+
+export interface SubstArray<E, A, B, InferInter> extends Array<Subst<E, A, B, InferInter>> {}
+
+export interface $<S extends string> {
+  _TypeVar_: S;
+}
+export type TypeVar<S extends string> = $<S>;
+
+/** TypeFn, use lamda symbol for better show. (Greek Small Letter Lamda) */
+export interface λ<Param extends string, Body> {
+  _TypeFn_: {
+    _Param_: Param;
+    _Body_: Body;
+  };
+}
+
+export type TypeFn<Param extends string, Body> = λ<Param, Body>;
+export type ParamVarOfTypeFn<F> = F extends TypeFn<infer Param, any> ? $<Param> : never;
+export type BodyOfTypeFn<F> = F extends TypeFn<any, infer Body> ? Body : never;
+
+export type AppF<F, A> = F extends TypeFn<infer Param, infer Body> ? Subst<Body, $<Param>, A, true> : F;
+
+/** Identity Type Function λx.x */
+export type IdentF = TypeFn<'x', $<'x'>>;
+/**
+@deprecated AppF already did the job to act as a const function when apply to non TypeFn, in other words, every type X(X is not TypeFn) is itself a ConstF<X>.
+*/
+export type ConstF<X> = TypeFn<'_', X>;
+
+/**
+The structures of FSubst and FSubstIn are same as their non-F counterparts except the third type param B becomes a type function F which recieve the subtype occurrence of A as parameter;
+*/
+export type FSubst<E, A, F, InferInter = false> = InferInter extends true
+  ? (E extends A & infer X ? AppF<F, FSubstIn<E, A, F, true>> & (X extends A ? unknown : X) : FSubstIn<E, A, F, true>)
+  : (E extends A ? AppF<F, FSubstIn<E, A, F, true>> : FSubstIn<E, A, F, false>);
+
+export type FSubstIn<E, A, F, InferInter = false> =
+  // See `SubstIn`
+  E extends UT.Primitive ? E : SubstIn<E, A, unknown, InferInter> extends E ? E : _FSubstIn<E, A, F, InferInter>;
+
+type _FSubstIn<E, A, F, InferInter> = E extends (...a: infer Params) => infer Ret
+  ? (...a: _FSubstIn<Params, A, F, InferInter>) => FSubst<Ret, A, F, InferInter>
+  : E extends [any, ...any[]]
+  ? FSubstRecord<E, A, F, InferInter>
+  : E extends Array<infer X>
+  ? FSubstArray<X, A, F, InferInter>
+  : FSubstRecord<E, A, F, InferInter>;
+
+export type FSubstRecord<E, A, F, InferInter> = {[K in keyof E]: FSubst<E[K], A, F, InferInter>};
+
+export interface FSubstArray<E, A, F, InferInter> extends Array<FSubst<E, A, F, InferInter>> {}
+
+/**
+Data.Fix
+@deprecated Impractical, use `SubstIn` and `FSubstIn` instead.
+@example
+  type A = {kind:'A',name:string};
+  type B = {kind:'B',target:T1};
+  type T1 = A | B;
+  type C = {kind:'C',items:T1[]};
+  type T2 = Fix<T1 | C>;
+*/
+export type Fix<T> = {unfix: SubstIn<T, T, Fix<T>>};
+
 /**
 Transform (A => B | A => C) to (A => B|C)
 */
@@ -25,7 +125,7 @@ export type UnionF<F> = [F] extends [Function]
   : F;
 
 /** Index Signature */
-export function IndexSig<T, K extends keyof T & string>(a: T): {[k: string]: UnionF<T[K]>} {
+export function IndexSig<T>(a: T): {[k: string]: UnionF<T[keyof T]>} {
   return a as any;
 }
 
@@ -315,7 +415,7 @@ export function escapeNonAlphanum(s: string, codePointSyntax: boolean = true): s
 export function escapeRegex(s: string, inCharClass = false): string {
   s = s.replace(/[\/\\^$*+?.()|[\]{}]/g, '\\$&');
   if (inCharClass) {
-    s = s.replace(/-/g, '\\$&');
+    s = s.replace(/-/g, '\\-');
   }
   return s;
 }
@@ -338,6 +438,25 @@ export function enumNum(begin: number, end: number): number[] {
 
 export function invertMap<K, V>(m: Map<K, V>): Map<V, K> {
   return new Map(Array.from(m).map(kv => kv.reverse() as [V, K]));
+}
+
+type _InvertRecord<M> = InterU<{[K in keyof M]: {[V in M[K] extends keyof any ? M[K] : string]: K}}[keyof M]>;
+
+export type InvertRecord<M> =
+  // Ensure values of M are distinct types.
+  // Overlaps will result in intersection type instead of union
+  // which surely not super type of keyof M
+  keyof M extends _InvertRecord<M>[keyof _InvertRecord<M>]
+    ? _InvertRecord<M>
+    : {[k in M[keyof M] extends keyof any ? M[keyof M] : string]: string};
+
+export function invertRecord<M>(m: M): InvertRecord<M>;
+export function invertRecord(m: any): any {
+  let a = {} as any;
+  for (let k in m) {
+    a[m[k]] = k;
+  }
+  return a;
 }
 
 const _excludeSignCodePoint = 94; //ord('^');
