@@ -2,7 +2,7 @@ import * as Parsec from '../src/Parsec';
 import * as K from '../src/Kit';
 import * as C from 'fast-check';
 import {testProp, sampleInCharset} from './utils';
-import assert = require('assert');
+import {assert} from 'chai';
 import {Parser} from '../src/Parsec';
 
 type TestState = {counter: number; whole: string};
@@ -151,8 +151,8 @@ const Gen = {
   },
   AltsExacts() {
     return C.array(unicodes(), 1, 20).chain(slist => {
-      // string list may have overlaps, sort by length to avoid consumed by early prefix
-      slist = slist.sort((a, b) => K.compare(a.length, b.length));
+      // string list may have overlaps, sort by length reverse to avoid consumed by early prefix
+      slist = slist.sort((a, b) => a.length - b.length).reverse();
       return C.nat(slist.length - 1).map(i => {
         let alts = slist.map(PrimeParser.Exacts);
         return ComboParser.Alts(alts, i);

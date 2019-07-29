@@ -1,12 +1,10 @@
 import * as K from '../src/Kit';
 import * as C from 'fast-check';
 import {testProp, sampleInCharRange} from './utils';
-
+import {assert} from 'chai';
 import Unicode from '../src/Unicode';
 import * as UnicodeProperty from '../src/UnicodeProperty';
 import {factorize, DEFAULT_UNICODE_PKG} from '../src/tools/buildUnicode';
-
-import assert = require('assert');
 
 const charPairGen = () => C.tuple(C.fullUnicode(), C.fullUnicode());
 const charRangeGen = () =>
