@@ -14,6 +14,8 @@ export const enum Ordering {
 
 export type Maybe<T> = T | undefined;
 
+export type Writable<T> = {-readonly [P in keyof T]-?: T[P]};
+
 /** Union to Intersection */
 export type InterU<U> = (U extends any ? (a: U) => 0 : never) extends ((a: infer I) => 0) ? I : never;
 
@@ -40,19 +42,29 @@ export type SubstIn<E, A, B, InferInter = false> =
   // First check extends Primitive in order to distribute over union types
   // Subst unknown check if E does not contain type A, then preserve its type name
   // Thus SubstIn<A[] | X, B> will preserve type name X if X does not contain type A
-  E extends UT.Primitive ? E : _SubstIn<E, A, unknown, InferInter> extends E ? E : _SubstIn<E, A, B, InferInter>;
+  E extends UT.Primitive ? E : SubstInRaw<E, A, unknown, InferInter> extends E ? E : SubstInRaw<E, A, B, InferInter>;
 
-type _SubstIn<E, A, B, InferInter> = E extends (...a: infer Params) => infer Ret
-  ? (...a: _SubstIn<Params, A, B, InferInter>) => Subst<Ret, A, B, InferInter>
+export type SubstInRaw<E, A, B, InferInter> = E extends (...a: infer Params) => infer Ret
+  ? (...a: SubstInRaw<Params, A, B, InferInter>) => Subst<Ret, A, B, InferInter>
   : E extends [any, ...any[]]
   ? SubstRecord<E, A, B, InferInter>
   : E extends Array<infer X>
   ? SubstArray<X, A, B, InferInter>
+  : E extends ReadonlyArray<infer X>
+  ? SubstROArray<X, A, B, InferInter>
   : SubstRecord<E, A, B, InferInter>;
 
 export type SubstRecord<E, A, B, InferInter> = {[K in keyof E]: Subst<E[K], A, B, InferInter>};
+/*
+// This definition will cause error "Type instantiation is excessively deep and possibly infinite"
+// Use interface extends to defer the type instantiation
 
-export interface SubstArray<E, A, B, InferInter> extends Array<Subst<E, A, B, InferInter>> {}
+export type SubstArray<E, A, B, InferInter> = E extends Array<any>
+  ? Array<{[I in keyof E]: Subst<E[I], A, B, InferInter>}[Exclude<keyof E, string>]>
+  : ReadonlyArray<{[I in keyof E]: Subst<E[I], A, B, InferInter>}[Exclude<keyof E, string>]>;
+*/
+export interface SubstArray<X, A, B, InferInter> extends Array<Subst<X, A, B, InferInter>> {}
+export interface SubstROArray<X, A, B, InferInter> extends ReadonlyArray<Subst<X, A, B, InferInter>> {}
 
 export interface $<S extends string> {
   _TypeVar_: S;
@@ -83,25 +95,24 @@ export type ConstF<X> = TypeFn<'_', X>;
 /**
 The structures of FSubst and FSubstIn are same as their non-F counterparts except the third type param B becomes a type function F which recieve the subtype occurrence of A as parameter;
 */
-export type FSubst<E, A, F, InferInter = false> = InferInter extends true
-  ? (E extends A & infer X ? AppF<F, FSubstIn<E, A, F, true>> & (X extends A ? unknown : X) : FSubstIn<E, A, F, true>)
-  : (E extends A ? AppF<F, FSubstIn<E, A, F, true>> : FSubstIn<E, A, F, false>);
+export type FSubst<E, A, F> = E extends A ? AppF<F, FSubstIn<E, A, F>> : FSubstIn<E, A, F>;
 
-export type FSubstIn<E, A, F, InferInter = false> =
+export type FSubstIn<E, A, F> =
   // See `SubstIn`
-  E extends UT.Primitive ? E : SubstIn<E, A, unknown, InferInter> extends E ? E : _FSubstIn<E, A, F, InferInter>;
+  E extends UT.Primitive ? E : SubstIn<E, A, unknown> extends E ? E : FSubstInRaw<E, A, F>;
 
-type _FSubstIn<E, A, F, InferInter> = E extends (...a: infer Params) => infer Ret
-  ? (...a: _FSubstIn<Params, A, F, InferInter>) => FSubst<Ret, A, F, InferInter>
+export type FSubstInRaw<E, A, F> = E extends (...a: infer Params) => infer Ret
+  ? (...a: FSubstInRaw<Params, A, F>) => FSubst<Ret, A, F>
   : E extends [any, ...any[]]
-  ? FSubstRecord<E, A, F, InferInter>
-  : E extends Array<infer X>
-  ? FSubstArray<X, A, F, InferInter>
-  : FSubstRecord<E, A, F, InferInter>;
+  ? FSubstRecord<E, A, F>
+  : E extends ReadonlyArray<any>
+  ? FSubstArray<E, A, F>
+  : FSubstRecord<E, A, F>;
 
-export type FSubstRecord<E, A, F, InferInter> = {[K in keyof E]: FSubst<E[K], A, F, InferInter>};
-
-export interface FSubstArray<E, A, F, InferInter> extends Array<FSubst<E, A, F, InferInter>> {}
+export type FSubstRecord<E, A, F> = {[K in keyof E]: FSubst<E[K], A, F>};
+export type FSubstArray<E, A, F> = E extends Array<any>
+  ? Array<{[I in keyof E]: FSubst<E[I], A, F>}[Exclude<keyof E, string>]>
+  : ReadonlyArray<{[I in keyof E]: FSubst<E[I], A, F>}[Exclude<keyof E, string>]>;
 
 /**
 Data.Fix
