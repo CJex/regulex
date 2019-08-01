@@ -49,7 +49,7 @@ export interface CharClassNode extends NodeBase {
 
 export interface ListNode extends NodeBase {
   type: 'List';
-  // Exclude<Expr,ListNode | DisjunctionNode> caused weird type error
+  // Exclude<Expr,ListNode | DisjunctionNode> caused weird recursive ref type error
   body: Array<Exclude<Exclude<Expr, ListNode>, DisjunctionNode>>;
 }
 
@@ -72,8 +72,7 @@ export interface DisjunctionNode extends NodeBase {
 }
 
 export type GroupBehavior =
-  // Group name could be unicode escape sequence, so we use rawName to track source
-  | {type: 'Capturing'; index: number; named?: {name: string; rawName?: string}}
+  | {type: 'Capturing'; index: number; name?: string}
   | {type: 'NonCapturing'}
   | {type: 'Atomic'}
   | {type: 'EnableDup'};
@@ -120,18 +119,18 @@ export type Node = LeafNode | BranchNode;
 export type Expr = Exclude<Node, CharRangeNode | QuantifierNode>;
 
 export class RegexFlags {
-  public unicode = false;
-  public dotAll = false;
-  public global = false;
-  public ignoreCase = false;
-  public multiline = false;
-  public sticky = false;
-  public extended = false;
+  public readonly unicode: boolean = false;
+  public readonly dotAll: boolean = false;
+  public readonly global: boolean = false;
+  public readonly ignoreCase: boolean = false;
+  public readonly multiline: boolean = false;
+  public readonly sticky: boolean = false;
+  public readonly extended: boolean = false;
 
   static parse(flags: string): RegexFlags;
   static parse(flags: string, strict: true): K.Result<RegexFlags, string>;
   static parse(flags: string, strict: boolean = false): RegexFlags | K.Result<RegexFlags, string> {
-    let reFlag = new RegexFlags();
+    let reFlag = new RegexFlags() as K.Writable<RegexFlags>;
     let invalid = [];
     for (let c of flags) {
       let p = RegexFlags.flagMap.get(c);
@@ -171,7 +170,7 @@ export class RegexFlags {
     return flags;
   }
 
-  static flagMap = new Map<string, UT.NonFunctionKeys<RegexFlags>>([
+  static readonly flagMap = new Map<string, UT.NonFunctionKeys<RegexFlags>>([
     ['u', 'unicode'],
     ['g', 'global'],
     ['i', 'ignoreCase'],
@@ -181,7 +180,7 @@ export class RegexFlags {
     ['x', 'extended']
   ]);
 
-  static invFlagMap = K.invertMap(RegexFlags.flagMap);
+  static readonly invFlagMap = K.invertMap(RegexFlags.flagMap);
 }
 
 export interface Regex {
@@ -286,7 +285,8 @@ export function match<T>(node: Node, clause: MatchClause<Node, T, Node>): T {
 }
 
 export function fmap<T>(node: Node, f: (n: Node) => T): NodeF<T>;
-export function fmap<A, B>(node: NodeF<A>, f: (n: A) => B): NodeF<B>;
+export function fmap<T, N extends Node = Node>(node: N, f: (n: N) => T): NodeF<T, N>;
+export function fmap<A, B, N extends Node = Node>(node: NodeF<A, N>, f: (n: A) => B): NodeF<B, N>;
 export function fmap<A, B>(node: NodeF<A>, f: (n: A) => B): NodeF<B> {
   if (isBranchNode(node)) {
     if (node.type === 'CharRange') {
@@ -314,19 +314,9 @@ export function fmap<A, B>(node: NodeF<A>, f: (n: A) => B): NodeF<B> {
 /**
 Bottom up transform node, aka Catamorphism.
 */
-export function bottomUp<T, N extends Node = Node>(n: N, f: (n: SubstIn<N, N, T>, parent?: N) => T): T;
-export function bottomUp<T, N>(
-  n: N,
-  f: (n: SubstIn<N, N, T>, parent?: N) => T,
-  _fmap: (n: N, fn: (a: N) => T) => SubstIn<N, N, T>
-): T;
-export function bottomUp<T, N>(
-  n: N,
-  f: (n: SubstIn<N, N, T>, parent?: N) => T,
-  _fmap: (n: N, fn: (a: N) => T) => SubstIn<N, N, T> = fmap as any
-): T {
+export function bottomUp<T, N extends Node = Node>(n: N, f: (n: NodeF<T, N>, parent?: N) => T): T {
   function cata(n: N, parent?: N): T {
-    return f(_fmap(n, a => cata(a, n)), parent);
+    return f(fmap<T, N>(n, a => cata(a, n)), parent);
   }
   return cata(n);
 }
@@ -389,8 +379,8 @@ export function getGroupsInfo(re: Node, _renumber = false): RegexGroupsInfo {
   visit(re, {
     Group(n) {
       if (n.behavior.type === 'Capturing') {
-        if (n.behavior.named) {
-          groups.names.add(n.behavior.named.name);
+        if (n.behavior.name) {
+          groups.names.add(n.behavior.name);
         }
         groups.count++;
         if (_renumber) {
