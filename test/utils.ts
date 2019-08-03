@@ -129,10 +129,6 @@ export function allEqual(a: any[]): boolean {
   return true;
 }
 
-function isNumber(n: any) {
-  return Object.prototype.toString.call(n) === '[object Number]';
-}
-
 export function sampleInCharRange(range: K.CharRangeRepr, maxCount = 100): string[] {
   let chars: string[] = [];
   let minCodePoint = K.CharRange.begin(range);
@@ -158,4 +154,14 @@ export function sampleInCharset(charset: K.Charset, maxCount = 100): string[] {
     chars = chars.concat(s);
   }
   return chars;
+}
+
+export function genInCharset(ch: K.Charset): C.Arbitrary<string> {
+  return C.constantFrom(...ch.ranges).chain(range =>
+    C.integer(K.CharRange.begin(range), K.CharRange.end(range)).map(String.fromCodePoint)
+  );
+}
+
+function isNumber(n: any) {
+  return Object.prototype.toString.call(n) === '[object Number]';
 }
