@@ -1,0 +1,276 @@
+:root {
+  --error-color: #ff300f;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #303030;
+  font-family: sans-serif;
+}
+
+.code,
+.code * {
+  font-family: 'DejaVu Sans Mono', monospace;
+}
+
+h1 {
+  line-height: 1;
+  font-size: 32px;
+  color: #40b0f0;
+  margin: 0;
+  padding: 10px;
+  padding-top: 16px;
+  border-bottom: 2px dashed grey;
+  margin-bottom: 12px;
+}
+h1 strong {
+  margin-right: 0.5em;
+}
+h1 em {
+  color: skyblue;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: normal;
+  display: inline;
+  white-space: nowrap;
+}
+
+.blockCt {
+  border: 1px solid black;
+  background: #eee;
+  margin: 10px;
+}
+
+#editorCt {
+  padding: 6px;
+  min-height: 24px;
+  line-height: 24px;
+  font-size: 20px;
+  font-weight: bold;
+  display: flex;
+  flex-direction: row;
+}
+
+#editorCt .slash {
+  height: 24px;
+  padding: 0 2px;
+  color: darkred;
+}
+
+#editorCt .endSlash {
+  align-self: flex-end;
+}
+
+#sourceEditor {
+  min-height: 24px;
+  min-width: 100px;
+  outline: none;
+  color: navy;
+  word-break: break-all;
+}
+
+#sourceEditor * {
+  padding: 0;
+  margin: 0;
+  border: none;
+  font-style: normal;
+}
+
+#editorCt .flagsInputCt {
+  align-self: flex-end;
+}
+
+#flagsInput {
+  display: block;
+  font-size: 20px;
+  height: 23px;
+  border: none;
+  border-bottom: 1px solid transparent;
+  outline: none;
+  width: auto;
+  min-width: 14px;
+  max-width: 88px;
+  padding: 0;
+
+  background: transparent;
+  color: blue;
+  font-weight: bold;
+}
+
+#flagsInput.error {
+  border-bottom-color: var(--error-color);
+}
+
+#errorIcon {
+  width: 18px;
+  height: 20px;
+  padding-left: 10px;
+  align-self: flex-end;
+  display: none;
+}
+
+#errorIcon i {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--error-color);
+  font-size: 14px;
+  line-height: 18px;
+  font-style: normal;
+  font-weight: bold;
+  text-align: center;
+  color: white;
+  cursor: pointer;
+}
+
+#errorIcon i:hover {
+  background: #ff009d;
+}
+
+#errorIcon.show {
+  display: block;
+}
+
+.btnsCt {
+  margin: 10px;
+}
+
+.btnsCt button {
+  box-sizing: content-box;
+  height: 20px;
+  padding: 6px 8px 4px 8px;
+  font-size: 18px;
+  line-height: 18px;
+  margin-right: 8px;
+  border-radius: 6px;
+  color: white;
+  background: #005cdd;
+  border: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.btnsCt button:hover {
+  background: #0080ff;
+}
+.btnsCt button:active {
+  background: navy;
+}
+
+#diagramCt {
+  height: 200px;
+}
+
+#errorBox {
+  padding: 6px;
+  color: darkred;
+  font-size: 16px;
+  display: none;
+}
+
+#errorBox .highlight {
+  color: red;
+  font-weight: bold;
+}
+
+#errorBox .normal {
+  color: navy;
+}
+
+#errorBox.show {
+  display: block;
+}
+
+footer {
+  text-align: center;
+  border-top: 1px solid grey;
+  margin: 1em auto;
+  padding: 10px 0 40px 0;
+  font-size: 16px;
+}
+footer a.siteLink {
+  color: deepskyblue;
+  text-decoration: none;
+  padding: 1px;
+  border-bottom: 1px solid deepskyblue;
+}
+
+footer a.siteLink:hover {
+  color: lightcyan;
+  border-color: lightcyan;
+}
+
+.foBtn {
+  font-size: 16px;
+  padding: 1px 10px 2px 8px;
+  display: inline-block;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: normal;
+}
+
+.foBtn svg {
+  width: 18px;
+  height: 18px;
+  position: relative;
+  top: 2px;
+}
+
+.twitterJex {
+  color: white;
+  background-color: #1f95e1;
+  margin-right: 10px;
+}
+
+.twitterJex:hover {
+  background-color: #0c7abf;
+}
+
+.githubJex {
+  color: black;
+  background-color: #eee;
+}
+
+.githubJex:hover {
+  background-color: #d0d5da;
+}
+
+.githubCorner {
+  display: block;
+  width: 56px;
+  height: 56px;
+  position: absolute;
+  top: 0;
+  border: 0;
+  right: 0;
+}
+
+.githubCorner svg {
+  fill: cornflowerblue;
+  color: #eee;
+}
+
+.githubCorner:hover .octoArm {
+  animation: octocatWave 600ms ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes octocatWave {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+
+  20%,
+  60% {
+    transform: rotate(-25deg);
+  }
+
+  40%,
+  80% {
+    transform: rotate(10deg);
+  }
+}
