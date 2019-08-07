@@ -29,10 +29,18 @@ export type EventTypes<E extends Events> = keyof EventsMap<E>;
 
 export type EventOfType<E extends Events, T extends EventTypes<E>> = EventsMap<E>[T];
 
+export type EventLifeCycleHooks<E extends Events> = {[K in EventTypes<E>]?: {init: Function; clear: Function}};
+
 export class EventEmitter<E extends Events> {
   private _eventListenerPool: {
     [K in EventTypes<E>]: Set<(e: EventOfType<E, K>) => void>;
   } = Object.create(null);
+
+  private _eventLifeCycleHooks: EventLifeCycleHooks<E>;
+
+  constructor(config?: {hooks?: EventLifeCycleHooks<E>}) {
+    this._eventLifeCycleHooks = config && config.hooks ? config.hooks : {};
+  }
 
   on<T extends EventTypes<E>>(eventType: T, listener: (e: EventOfType<E, T>) => void): this;
   on<T extends EventTypes<E>>(eventType: T, listener: (e: any) => void): this {
@@ -41,6 +49,10 @@ export class EventEmitter<E extends Events> {
     if (!fnSet) {
       fnSet = new Set();
       pool[eventType] = fnSet;
+    }
+    if (fnSet.size === 0) {
+      let hook = this._eventLifeCycleHooks[eventType];
+      if (hook) hook.init();
     }
     fnSet.add(listener);
     return this;
@@ -51,7 +63,11 @@ export class EventEmitter<E extends Events> {
     let pool = this._eventListenerPool;
     let fnSet = pool[eventType];
     if (fnSet) {
-      fnSet.delete(listener);
+      let has = fnSet.delete(listener);
+      if (fnSet.size === 0 && has) {
+        let hook = this._eventLifeCycleHooks[eventType];
+        if (hook) hook.clear();
+      }
     }
     return this;
   }
@@ -74,6 +90,8 @@ export class EventEmitter<E extends Events> {
 
   clear<T extends EventTypes<E>>(eventType: T): this {
     delete this._eventListenerPool[eventType];
+    let hook = this._eventLifeCycleHooks[eventType];
+    if (hook) hook.clear();
     return this;
   }
 }
