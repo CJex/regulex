@@ -1,0 +1,60 @@
+@value base-font-size: 18px;
+
+.editorCt {
+  display: flex;
+  flex-direction: row;
+  caret-color: lime;
+}
+.editorCt,
+.editorCt * {
+  font-size: base-font-size;
+  font-weight: bold;
+  font-family: 'DejaVu Sans Mono', monospace;
+  line-height: calc(base-font-size + 4px);
+}
+
+.slash {
+  height: calc(base-font-size + 4px);
+  padding: 0 2px;
+  color: darkred;
+}
+
+.slash::before {
+  content: '/';
+}
+
+.endSlash {
+  align-self: flex-end;
+}
+
+.sourceEditor {
+  min-width: 100px;
+  outline: none;
+  color: navy;
+  word-break: break-all;
+}
+
+.sourceEditor * {
+  padding: 0;
+  margin: 0;
+  border: none;
+  font-style: normal;
+}
+
+.flagsInputCt {
+  height: calc(base-font-size + 4px);
+  align-self: flex-end;
+}
+
+.flagsInput {
+  align-self: flex-end;
+  display: block;
+  height: calc(base-font-size + 4px);
+  min-width: calc(base-font-size * 2);
+  max-width: calc(base-font-size * 6);
+  padding: 0;
+  outline: none;
+  border: none;
+  background: transparent;
+  color: blue;
+}

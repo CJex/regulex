@@ -8,30 +8,24 @@
 <body>
 <h1>
   <strong>Regulex</strong>
-  <em>Regular Expression Excited！</em>
+  <span>Regular Expression Excited！</span>
 </h1>
 
-<div class="blockCt code" id="editorCt">
-  <div class="slash">/</div>
-  <div id="sourceEditor" contenteditable="true" spellcheck="false"></div>
-  <div class="slash endSlash">/</div>
-  <div class="flagsInputCt">
-    <input id="flagsInput" class="code" type="text" value="u" maxlength="7" spellcheck="false" />
+<main>
+  <div class="blockCt" id="editorCt">
   </div>
-  <div id="errorIcon"><i>!</i></div>
-</div>
+
+  <div class="btnsCt">
+    <button id="visualizeBtn">Visualize</button>
+    <button id="exportImageBtn">Export Image</button>
+    <button id="embedIFrameBtn">Embed as IFrame</button>
+  </div>
+
+  <div class="blockCt" id="errorBox"></div>
+  <div class="blockCt" id="diagramCt"></div>
+</main>
 
 
-<div class="btnsCt">
-  <button id="visualizeBtn">Visualize</button>
-  <button id="exportImageBtn">Export Image</button>
-  <button id="embedIFrameBtn">Embed as IFrame</button>
-</div>
-
-<div class="blockCt code" id="errorBox"></div>
-
-
-<div class="blockCt" id="diagramCt"></div>
 
 <footer>
   <a href="https://jex.im/" target="_blank" class="siteLink">Created by Jex.</a>

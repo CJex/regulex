@@ -1,10 +1,21 @@
 import {h, StyleValue} from './HTML';
 import * as K from '../Kit';
-import './main.css'; // Webpack sucks!
+import {RegexEditor} from './RegexEditor';
+import './style/main.css'; // Webpack sucks!
 
 document.addEventListener('DOMContentLoaded', main);
-const body = document.body;
 
 function main() {
-  alert('Webpack sucks!');
+  let editor = new RegexEditor();
+  let editorCt = byId('editorCt');
+  editor.renderTo(editorCt);
+
+  let visualizeBtn = byId('visualizeBtn');
+  visualizeBtn.onclick = () => {
+    console.log(editor.getRegex());
+  };
+}
+
+function byId(id: string): HTMLElement {
+  return document.getElementById(id)!;
 }

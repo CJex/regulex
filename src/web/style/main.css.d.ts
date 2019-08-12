@@ -1,13 +1,5 @@
 declare const styles: {
-  readonly code: string;
   readonly blockCt: string;
-  readonly editorCt: string;
-  readonly slash: string;
-  readonly endSlash: string;
-  readonly sourceEditor: string;
-  readonly flagsInputCt: string;
-  readonly flagsInput: string;
-  readonly error: string;
   readonly errorIcon: string;
   readonly show: string;
   readonly btnsCt: string;

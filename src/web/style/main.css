@@ -1,5 +1,7 @@
 :root {
-  --error-color: #ff300f;
+  --side-padding: 10px;
+  --section-margin: 12px;
+  --base-font-size: 16px;
 }
 
 body {
@@ -7,99 +9,39 @@ body {
   padding: 0;
   background: #303030;
   font-family: sans-serif;
-}
-
-.code,
-.code * {
-  font-family: 'DejaVu Sans Mono', monospace;
+  font-size: var(--base-font-size);
 }
 
 h1 {
   line-height: 1;
-  font-size: 32px;
-  color: #40b0f0;
+  font-size: 2em;
+  color: #42baff;
+  padding: var(--side-padding);
+  padding-top: calc(var(--side-padding) + 4px);
+  padding-left: calc(var(--side-padding) - 2px);
   margin: 0;
-  padding: 10px;
-  padding-top: 16px;
+  margin-bottom: var(--section-margin);
   border-bottom: 2px dashed grey;
-  margin-bottom: 12px;
 }
 h1 strong {
   margin-right: 0.5em;
 }
-h1 em {
+h1 span {
   color: skyblue;
-  font-size: 16px;
-  font-style: normal;
+  font-size: 1rem;
   font-weight: normal;
-  display: inline;
   white-space: nowrap;
+}
+
+main {
+  padding: 0 var(--side-padding);
 }
 
 .blockCt {
   border: 1px solid black;
   background: #eee;
-  margin: 10px;
-}
-
-#editorCt {
+  margin: var(--section-margin) 0;
   padding: 6px;
-  min-height: 24px;
-  line-height: 24px;
-  font-size: 20px;
-  font-weight: bold;
-  display: flex;
-  flex-direction: row;
-}
-
-#editorCt .slash {
-  height: 24px;
-  padding: 0 2px;
-  color: darkred;
-}
-
-#editorCt .endSlash {
-  align-self: flex-end;
-}
-
-#sourceEditor {
-  min-height: 24px;
-  min-width: 100px;
-  outline: none;
-  color: navy;
-  word-break: break-all;
-}
-
-#sourceEditor * {
-  padding: 0;
-  margin: 0;
-  border: none;
-  font-style: normal;
-}
-
-#editorCt .flagsInputCt {
-  align-self: flex-end;
-}
-
-#flagsInput {
-  display: block;
-  font-size: 20px;
-  height: 23px;
-  border: none;
-  border-bottom: 1px solid transparent;
-  outline: none;
-  width: auto;
-  min-width: 14px;
-  max-width: 88px;
-  padding: 0;
-
-  background: transparent;
-  color: blue;
-  font-weight: bold;
-}
-
-#flagsInput.error {
-  border-bottom-color: var(--error-color);
 }
 
 #errorIcon {
@@ -135,7 +77,7 @@ h1 em {
 }
 
 .btnsCt {
-  margin: 10px;
+  margin: var(--section-margin) 0;
 }
 
 .btnsCt button {
@@ -165,9 +107,7 @@ h1 em {
 }
 
 #errorBox {
-  padding: 6px;
   color: darkred;
-  font-size: 16px;
   display: none;
 }
 
@@ -187,10 +127,11 @@ h1 em {
 footer {
   text-align: center;
   border-top: 1px solid grey;
-  margin: 1em auto;
-  padding: 10px 0 40px 0;
-  font-size: 16px;
+  margin: var(--section-margin) 0;
+  padding: var(--section-margin) var(--side-padding);
+  padding-bottom: 2em;
 }
+
 footer a.siteLink {
   color: deepskyblue;
   text-decoration: none;
