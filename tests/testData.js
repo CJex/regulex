@@ -148,7 +148,7 @@ var expectedFail = [
   '{}{4}{5}', '[a-b][z-a]{2,6}',
   '[z-\\n]',
   '[a-zA-z]+{3}',
-  'abc{3,7}+',
+  // 'abc{3,7}+',
   'a?{1,2}',
   'a+{1,2}',
   'a*{1,2}',
@@ -156,8 +156,8 @@ var expectedFail = [
   'a{1,4}{1,2}',
   "abc(def,([a-z],[0-6],([0-5]def),aaa)",
   "ab[abc",
-  "abc*+abc",
-  "ab++c*abc",
+  // "abc*+abc",
+  // "ab++c*abc",
   "\\",
   'abc{42,13}'
 ].map(str);
@@ -168,7 +168,8 @@ var re2ast =[{ raw: '\\\\{3}',
        repeat:
         { min: 3,
           max: 3,
-          nonGreedy: false },
+          nonGreedy: false,
+          possessive: false },
        chars: '\\',
        indices: [ 0, 5 ],
        raw: '\\\\{3}' } ],
@@ -199,7 +200,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: 'b',
     indices: [1, 3],
@@ -231,7 +233,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: 1,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '(1|0)?'
   }, {
@@ -306,7 +309,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: 'c',
     indices: [3, 5],
@@ -316,7 +320,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: 'd',
     indices: [5, 7],
@@ -326,7 +331,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: true
+      nonGreedy: true,
+      possessive: false
     },
     chars: 'e',
     indices: [7, 10],
@@ -345,7 +351,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 3,
       max: 110,
-      nonGreedy: true
+      nonGreedy: true,
+      possessive: false
     },
     raw: '[\\n-\\rbcd]{3,110}?'
   }, {
@@ -382,7 +389,8 @@ var re2ast =[{ raw: '\\\\{3}',
           repeat: {
             min: 1,
             max: Infinity,
-            nonGreedy: false
+            nonGreedy: false,
+            possessive: false
           },
           raw: '(a|b)+'
         }],
@@ -408,7 +416,8 @@ var re2ast =[{ raw: '\\\\{3}',
                 repeat: {
                   min: 0,
                   max: 1,
-                  nonGreedy: false
+                  nonGreedy: false,
+                  possessive: false
                 },
                 raw: '[e-z]?'
               }, {
@@ -458,7 +467,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: 'a',
     indices: [1, 3],
@@ -468,7 +478,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: true
+      nonGreedy: true,
+      possessive: false
     },
     chars: 'b',
     indices: [3, 6],
@@ -483,7 +494,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 10,
       max: 10,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: ',',
     indices: [12, 17],
@@ -498,7 +510,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: true
+      nonGreedy: true,
+      possessive: false
     },
     chars: 'b',
     indices: [18, 21],
@@ -521,7 +534,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '[\\]-a]*'
   }]
@@ -543,7 +557,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '[^]*'
   }]
@@ -564,7 +579,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '[-]*'
   }]
@@ -585,7 +601,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '[a-]*'
   }]
@@ -625,7 +642,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 1,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '(def)+'
     }, {
@@ -725,7 +743,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 1,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '[a-z]+'
     }, {
@@ -759,7 +778,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '([a-z]+,[abc]444,[^a-b])+'
   }, {
@@ -809,7 +829,8 @@ var re2ast =[{ raw: '\\\\{3}',
         repeat: {
           min: 1,
           max: Infinity,
-          nonGreedy: false
+          nonGreedy: false,
+          possessive: false
         },
         raw: '[0-1]+'
       }, {
@@ -834,7 +855,8 @@ var re2ast =[{ raw: '\\\\{3}',
           repeat: {
             min: 1,
             max: Infinity,
-            nonGreedy: false
+            nonGreedy: false,
+            possessive: false
           },
           raw: '[0-1]+'
         }],
@@ -867,7 +889,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '[a-zA-z]+'
   }, {
@@ -885,7 +908,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '[^\\s]*'
   }]
@@ -945,7 +969,8 @@ var re2ast =[{ raw: '\\\\{3}',
             repeat: {
               min: 0,
               max: 1,
-              nonGreedy: false
+              nonGreedy: false,
+              possessive: false
             },
             raw: '[01]?'
           }, {
@@ -966,7 +991,8 @@ var re2ast =[{ raw: '\\\\{3}',
             repeat: {
               min: 0,
               max: 1,
-              nonGreedy: false
+              nonGreedy: false,
+              possessive: false
             },
             raw: '\\d?'
           }]
@@ -987,7 +1013,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 3,
       max: 3,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}'
   }, {
@@ -1040,7 +1067,8 @@ var re2ast =[{ raw: '\\\\{3}',
           repeat: {
             min: 0,
             max: 1,
-            nonGreedy: false
+            nonGreedy: false,
+            possessive: false
           },
           raw: '[01]?'
         }, {
@@ -1061,7 +1089,8 @@ var re2ast =[{ raw: '\\\\{3}',
           repeat: {
             min: 0,
             max: 1,
-            nonGreedy: false
+            nonGreedy: false,
+            possessive: false
           },
           raw: '\\d?'
         }]
@@ -1085,7 +1114,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '\\w+'
   }, {
@@ -1108,7 +1138,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 1,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '\\w+'
     }],
@@ -1117,7 +1148,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '([-+.]\\w+)*'
   }, {
@@ -1135,7 +1167,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '\\w+'
   }, {
@@ -1158,7 +1191,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 1,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '\\w+'
     }],
@@ -1167,7 +1201,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '([-.]\\w+)*'
   }, {
@@ -1185,7 +1220,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '\\w+'
   }, {
@@ -1208,7 +1244,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 1,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '\\w+'
     }],
@@ -1217,7 +1254,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '([-.]\\w+)*'
   }]
@@ -1229,7 +1267,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: 2,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: 'a',
     indices: [0, 6],
@@ -1248,7 +1287,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: 2,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: 'a',
     indices: [0, 6],
@@ -1267,7 +1307,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: 2,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: 'a',
     indices: [0, 6],
@@ -1277,7 +1318,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 4,
       max: 4,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: '{',
     indices: [6, 10],
@@ -1291,7 +1333,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 1,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: 'a',
     indices: [0, 2],
@@ -1306,7 +1349,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 4,
       max: 4,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     chars: ',',
     indices: [4, 8],
@@ -1333,7 +1377,8 @@ var re2ast =[{ raw: '\\\\{3}',
           repeat: {
             min: 0,
             max: Infinity,
-            nonGreedy: false
+            nonGreedy: false,
+            possessive: false
           },
           raw: '.*'
         }],
@@ -1349,7 +1394,8 @@ var re2ast =[{ raw: '\\\\{3}',
           repeat: {
             min: 0,
             max: Infinity,
-            nonGreedy: false
+            nonGreedy: false,
+            possessive: false
           },
           raw: '.*'
         }],
@@ -1367,7 +1413,8 @@ var re2ast =[{ raw: '\\\\{3}',
         repeat: {
           min: 0,
           max: Infinity,
-          nonGreedy: false
+          nonGreedy: false,
+          possessive: false
         },
         raw: '.*'
       },{ type: 'exact', indices: [ 12, 15 ], raw: '<\\/', chars: '</' },{
@@ -1395,7 +1442,8 @@ var re2ast =[{ raw: '\\\\{3}',
           repeat: {
             min: 0,
             max: Infinity,
-            nonGreedy: false
+            nonGreedy: false,
+            possessive: false
           },
           raw: '.*'
         }],
@@ -1423,7 +1471,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 8,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '.{8,}'
     }, {
@@ -1445,7 +1494,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 0,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '.*'
     }, {
@@ -1470,7 +1520,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 0,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '.*'
     }, {
@@ -1483,7 +1534,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 1,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '\\W+'
     }],
@@ -1500,7 +1552,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 0,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '.*'
     }, {
@@ -1524,7 +1577,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 0,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '.*'
     }, {
@@ -1548,7 +1602,8 @@ var re2ast =[{ raw: '\\\\{3}',
       repeat: {
         min: 0,
         max: Infinity,
-        nonGreedy: false
+        nonGreedy: false,
+        possessive: false
       },
       raw: '.*'
     }, {
@@ -1567,7 +1622,8 @@ var re2ast =[{ raw: '\\\\{3}',
     repeat: {
       min: 0,
       max: Infinity,
-      nonGreedy: false
+      nonGreedy: false,
+      possessive: false
     },
     raw: '.*'
   }, {
@@ -1596,7 +1652,8 @@ var re2ast =[{ raw: '\\\\{3}',
           repeat: {
             min: 4,
             max: 4,
-            nonGreedy: false
+            nonGreedy: false,
+            possessive: false
           },
           raw: '\\d{4}'
         }],
@@ -1610,7 +1667,8 @@ var re2ast =[{ raw: '\\\\{3}',
           repeat: {
             min: 2,
             max: 2,
-            nonGreedy: false
+            nonGreedy: false,
+            possessive: false
           },
           raw: '\\d{2}'
         }]
@@ -1660,7 +1718,8 @@ var re2ast =[{ raw: '\\\\{3}',
             repeat: {
               min: 0,
               max: 1,
-              nonGreedy: false
+              nonGreedy: false,
+              possessive: false
             },
             chars: '0',
             indices: [25, 27],
@@ -1745,7 +1804,8 @@ var re2ast =[{ raw: '\\\\{3}',
             repeat: {
               min: 0,
               max: 1,
-              nonGreedy: false
+              nonGreedy: false,
+              possessive: false
             },
             chars: '0',
             indices: [57, 59],
@@ -1779,6 +1839,92 @@ var re2ast =[{ raw: '\\\\{3}',
     ranges: ['\u4e00\u9fa5'],
     chars: '',
     raw: '[\\u4e00-\\u9fa5]'
+  }]
+}, {
+  raw: 'a*+b++c?+d{1,3}+',
+  groupCount: 0,
+  tree: [{
+    type: 'exact',
+    repeat: {
+      min: 0,
+      max: Infinity,
+      nonGreedy: false,
+      possessive: true
+    },
+    chars: 'a',
+    indices: [0, 3],
+    raw: 'a*+'
+  }, {
+    type: 'exact',
+    repeat: {
+      min: 1,
+      max: Infinity,
+      nonGreedy: false,
+      possessive: true
+    },
+    chars: 'b',
+    indices: [3, 6],
+    raw: 'b++'
+  }, {
+    type: 'exact',
+    repeat: {
+      min: 0,
+      max: 1,
+      nonGreedy: false,
+      possessive: true
+    },
+    chars: 'c',
+    indices: [6, 9],
+    raw: 'c?+'
+  }, {
+    type: 'exact',
+    repeat: {
+      min: 1,
+      max: 3,
+      nonGreedy: false,
+      possessive: true
+    },
+    chars: 'd',
+    indices: [9, 16],
+    raw: 'd{1,3}+'
+  }]
+}, {
+  raw: 'a(?>bc|d)e',
+  groupCount: 0,
+  tree: [{
+    type: 'exact',
+    indices: [0, 1],
+    raw: 'a',
+    chars: 'a'
+  }, {
+    type: 'group',
+    num: undefined,
+    sub: [{
+      type: 'choice',
+      indices: [4, 8],
+      branches: [
+        [{
+          type: 'exact',
+          indices: [4, 6],
+          raw: 'bc',
+          chars: 'bc'
+        }], [{
+          type: 'exact',
+          indices: [7, 8],
+          raw: 'd',
+          chars: 'd'
+        }]],
+      raw: 'bc|d'
+    }],
+    indices: [1, 9],
+    atomicGroup: true,
+    endParenIndex: 8,
+    raw: '(?>bc|d)'
+  }, {
+    type: 'exact',
+    indices: [9, 10],
+    raw: 'e',
+    chars: 'e'
   }]
 }];
 

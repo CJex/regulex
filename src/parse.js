@@ -492,7 +492,7 @@ var actions=(function _() {
   function repeat01(stack,c,i,state,s) { _repeat(stack,0,1,i,s) } // e.g. /a?/
   function repeat1(stack,c,i,state,s) { _repeat(stack,1,Infinity,i,s) } // e.g. /a+/
   function _repeat(stack,min,max,charEndIndex,s) {
-    var last=stack[0],repeat={min:min,max:max,nonGreedy:false},
+    var last=stack[0],repeat={min:min,max:max,nonGreedy:false,possessive:false},
         charIndex=charEndIndex-1;
     if (last.chars && last.chars.length===1) charIndex=last.indices[0];
     if (last.type===EXACT_NODE) { // exact node only repeat last char
@@ -509,6 +509,7 @@ var actions=(function _() {
     _set(repeat,'beginIndex',charEndIndex-stack[0].indices[0]);
   }
   function repeatNonGreedy(stack) { stack[0].repeat.nonGreedy=true}
+  function repeatPossessive(stack) { stack[0].repeat.possessive=true}
   
   function escapeStart(stack,c,i) {
     stack.unshift({
@@ -571,6 +572,12 @@ var actions=(function _() {
     group.type=ASSERT_NODE;
     group.assertionType= c=='=' ? AssertLookahead : AssertNegativeLookahead ;
     // Caveat!!! Assertion group no need to capture
+    group.num=undefined;
+    stack.groupCounter.i--;
+  }
+  function groupAtomicGroup(stack) { // /(?>)/
+    var group=stack._parentGroup
+    group.atomicGroup=true;
     group.num=undefined;
     stack.groupCounter.i--;
   }
@@ -769,10 +776,12 @@ var actions=(function _() {
     exact:exact,dot:dot,nullChar:nullChar,assertBegin:assertBegin,
     assertEnd:assertEnd,assertWordBoundary:assertWordBoundary,
     repeatnStart:repeatnStart,repeatnComma:repeatnComma,repeatNonGreedy:repeatNonGreedy,
+    repeatPossessive:repeatPossessive,
     repeatnEnd:repeatnEnd,repeat1:repeat1,repeat01:repeat01,repeat0:repeat0,
     charClassEscape:charClassEscape,normalEscape:normalEscape,
     unicodeEscape:unicodeEscape,hexEscape:hexEscape,charClassEscape:charClassEscape,
     groupStart:groupStart,groupNonCapture:groupNonCapture,backref:backref,
+    groupAtomicGroup:groupAtomicGroup,
     groupToAssertion:groupToAssertion,groupEnd:groupEnd,
     choice:choice,endChoice:endChoice,
     charsetStart:charsetStart,charsetExclude:charsetExclude,
@@ -829,18 +838,18 @@ var charsetRangeEndIncompleteEscapeStates=charsetRangeEndIncompleteEscapeFirstSt
 
 var config={
   compact:true,
-  accepts:'start,begin,end,repeat0,repeat1,exact,repeatn,repeat01,repeatNonGreedy,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates),
+  accepts:'start,begin,end,repeat0,repeat1,exact,repeatn,repeat01,repeatNonGreedy,repeatPossessive,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates),
   trans:[
-    ['start,begin,end,exact,repeatNonGreedy,repeat0,repeat1,repeat01,groupStart,groupQualifiedStart,choice,repeatn>exact',exactEXCharset,actions.exact],
+    ['start,begin,end,exact,repeatNonGreedy,repeatPossessive,repeat0,repeat1,repeat01,groupStart,groupQualifiedStart,choice,repeatn>exact',exactEXCharset,actions.exact],
     // e.g. /\u54/ means /u54/
     [allHexEscapeStates+'>exact',exactEXCharset+hexDigit,actions.exact],
     // e.g. /\0abc/ is exact "\0abc",but /\012/ is an error
     ['nullChar>exact',exactEXCharset+digit,actions.exact],
     //[(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>exact',exactEXCharset+'']
-    [(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+',start,begin,end,exact,repeatNonGreedy,repeat0,repeat1,repeat01,groupStart,groupQualifiedStart,choice,repeatn>exact','.',actions.dot],
-    ['start,groupStart,groupQualifiedStart,end,begin,exact,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,choice,'+repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates+'>begin','^',actions.assertBegin],
+    [(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+',start,begin,end,exact,repeatNonGreedy,repeatPossessive,repeat0,repeat1,repeat01,groupStart,groupQualifiedStart,choice,repeatn>exact','.',actions.dot],
+    ['start,groupStart,groupQualifiedStart,end,begin,exact,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,repeatPossessive,choice,'+repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates+'>begin','^',actions.assertBegin],
     [(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+',exact>repeatnStart','{',actions.repeatnStart],
-    ['start,begin,end,groupQualifiedStart,groupStart,repeat0,repeat1,repeatn,repeat01,repeatNonGreedy,choice>repeatnErrorStart','{',actions.exact],//No repeat,treat as exact char e.g. /{/,/^{/,/a|{/
+    ['start,begin,end,groupQualifiedStart,groupStart,repeat0,repeat1,repeatn,repeat01,repeatNonGreedy,repeatPossessive,choice>repeatnErrorStart','{',actions.exact],//No repeat,treat as exact char e.g. /{/,/^{/,/a|{/
     ['repeatnStart>repeatn_1',digit,actions.exact], // Now maybe /a{1/
     ['repeatn_1>repeatn_1',digit,actions.exact], // Could be /a{11/
     ['repeatn_1>repeatn_2',',',actions.repeatnComma], // Now maybe /a{1,/
@@ -870,10 +879,11 @@ var config={
     ['exact,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>repeat01','?',actions.repeat01],
     ['choice>repeatErrorFinal','*+?'],
     ['repeat0,repeat1,repeat01,repeatn>repeatNonGreedy','?',actions.repeatNonGreedy],
-    ['repeat0,repeat1,repeat01,repeatn>repeatErrorFinal','+*'],
+    ['repeat0,repeat1,repeat01,repeatn>repeatPossessive','+',actions.repeatPossessive],
+    ['repeat0,repeat1,repeat01,repeatn>repeatErrorFinal','*'],
 
     // Escape
-    ['start,begin,end,groupStart,groupQualifiedStart,exact,repeatNonGreedy,repeat0,repeat1,repeat01,repeatn,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>escape','\\',actions.escapeStart],
+    ['start,begin,end,groupStart,groupQualifiedStart,exact,repeatNonGreedy,repeatPossessive,repeat0,repeat1,repeat01,repeatn,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>escape','\\',actions.escapeStart],
     ['escape>nullChar','0',actions.nullChar],
     ['nullChar>digitFollowNullError','0-9'], // "/\0123/" is invalid in standard
     ['escape>exact',normalEscapeEX,actions.normalEscape],
@@ -893,20 +903,21 @@ var config={
     ['digitBackref>exact',exactEXCharset+digit,actions.exact],
 
     // Group start
-    ['exact,begin,end,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,start,groupStart,groupQualifiedStart,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>groupStart','(',actions.groupStart],
+    ['exact,begin,end,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,repeatPossessive,start,groupStart,groupQualifiedStart,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>groupStart','(',actions.groupStart],
     ['groupStart>groupQualify','?'],
     ['groupQualify>groupQualifiedStart',':',actions.groupNonCapture],//group non-capturing
     ['groupQualify>groupQualifiedStart','=',actions.groupToAssertion],//group positive lookahead
     ['groupQualify>groupQualifiedStart','!',actions.groupToAssertion],//group negative lookahead
+    ['groupQualify>groupQualifiedStart','>',actions.groupAtomicGroup],//group atomic-group
     [(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+',groupStart,groupQualifiedStart,begin,end,exact,repeat1,repeat0,repeat01,repeatn,repeatNonGreedy,choice>exact',')',actions.groupEnd],//group end
 
     //choice
-    ['start,begin,end,groupStart,groupQualifiedStart,exact,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>choice','|', actions.choice],
+    ['start,begin,end,groupStart,groupQualifiedStart,exact,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,repeatPossessive,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>choice','|', actions.choice],
 
-    ['start,groupStart,groupQualifiedStart,begin,exact,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>end','$',actions.assertEnd],
+    ['start,groupStart,groupQualifiedStart,begin,exact,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,repeatPossessive,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>end','$',actions.assertEnd],
 
     // Charset [HA-HO]
-    ['exact,begin,end,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,groupQualifiedStart,groupStart,start,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>charsetStart','[',actions.charsetStart],
+    ['exact,begin,end,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,repeatPossessive,groupQualifiedStart,groupStart,start,choice,'+(repeatnStates+',nullChar,digitBackref,'+unicodeEscapeStates+','+hexEscapeStates)+'>charsetStart','[',actions.charsetStart],
     ['charsetStart>charsetExclude','^',actions.charsetExclude],
     ['charsetStart>charsetContent','^\\]^',actions.charsetContent],
     ['charsetExclude>charsetContent','^\\]',actions.charsetContent], // "[^^]" is valid

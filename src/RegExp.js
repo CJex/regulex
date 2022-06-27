@@ -212,7 +212,7 @@ var NFABuilders=(function _() {
     var groupStart=[newState()];
     var ts=[{
       from:from,to:groupStart,charset:false,
-      action:!node.nonCapture && function _groupStart(stack,c,i) {
+      action:!node.nonCapture && !node.atomicGroup && function _groupStart(stack,c,i) {
         stack.unshift({type:GROUP_CAPTURE_START,num:node.num,index:i});
       }
     }];
@@ -223,7 +223,7 @@ var NFABuilders=(function _() {
     var groupEnd=[newState()];
     ts.push({
       from:a.accepts,to:groupEnd,charset:false,
-      action:!node.nonCapture && function _groupEnd(stack,c,i) {
+      action:!node.nonCapture && !node.atomicGroup && function _groupEnd(stack,c,i) {
         stack.unshift({type:GROUP_CAPTURE_END,num:node.num,index:i});
       }
     });
@@ -359,7 +359,7 @@ function repeatNFA(node,from) {
     });
   }
   var endState=[newState()];
-  if (repeat.nonGreedy) {
+  if (repeat.nonGreedy || repeat.possessive) {
     trans.push({
       from:accepts,to:endState,charset:false
     });

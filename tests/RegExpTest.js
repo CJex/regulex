@@ -9,6 +9,10 @@ reMatchCases.forEach(function (c) {
     try {
       var myRe=new MyRegExp(re.source,re);
       var result=re.exec(s),myResult=myRe.exec(s);
+      if (result) {
+        // we have no groups
+        delete result.groups;
+      }
       assert.deepEqual(myResult,result,re);
     } catch(e) {
       K.log(re);
