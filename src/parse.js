@@ -20,6 +20,8 @@ var Constants={
   //Assertion Type Constants
   AssertLookahead:"AssertLookahead",
   AssertNegativeLookahead:"AssertNegativeLookahead",
+  AssertLookbehind:"AssertLookbehind",
+  AssertNegativeLookbehind:"AssertNegativeLookbehind",
   AssertNonWordBoundary:"AssertNonWordBoundary",
   AssertWordBoundary:"AssertWordBoundary",
   AssertEnd:"AssertEnd",
@@ -350,8 +352,14 @@ function _checkRepeat(node) {
   if (node.repeat) {
     var astype = node.assertionType;
     var msg = 'Nothing to repeat! Repeat after assertion doesn\'t make sense!';
-    if (astype === 'AssertLookahead'  || astype === 'AssertNegativeLookahead' ) {
-      var assertifier = astype === 'AssertLookahead' ? '?=' : '?!';
+    var assertifiers = {
+      'AssertLookahead': '?=',
+      'AssertNegativeLookahead': '?!',
+      'AssertLookbehind': '?<=',
+      'AssertNegativeLookbehind': '?<!',
+    }
+    var assertifier = assertifiers[astype];
+    if (assertifier !== undefined) {
       var pattern = '('+assertifier+'b)';
       msg += '\n/a'+pattern+'+/、/a'+pattern+'{1,n}/ are the same as /a'+pattern+'/。\n' +
               '/a'+pattern+'*/、/a'+pattern+'{0,n}/、/a'+pattern+'?/ are the same as /a/。';
@@ -567,10 +575,13 @@ var actions=(function _() {
     group.num=undefined;
     stack.groupCounter.i--;
   }
-  function groupToAssertion(stack,c,i) { // Convert /(?!)/,/(?=)/ to AssertNode
+  function groupToAssertion(stack,c,i,state) { // Convert /(?!)/,/(?=)/ to AssertNode
     var group=stack._parentGroup;
     group.type=ASSERT_NODE;
     group.assertionType= c=='=' ? AssertLookahead : AssertNegativeLookahead ;
+    if (state === 'groupNameStart') {
+      group.assertionType= c==='=' ? AssertLookbehind : AssertNegativeLookbehind ;
+    }
     // Caveat!!! Assertion group no need to capture
     group.num=undefined;
     stack.groupCounter.i--;
@@ -957,6 +968,8 @@ var config={
     ['groupQualify>groupQualifiedStart',':',actions.groupNonCapture],//group non-capturing
     ['groupQualify>groupQualifiedStart','=',actions.groupToAssertion],//group positive lookahead
     ['groupQualify>groupQualifiedStart','!',actions.groupToAssertion],//group negative lookahead
+    ['groupNameStart>groupQualifiedStart','=',actions.groupToAssertion],//group positive lookbehind
+    ['groupNameStart>groupQualifiedStart','!',actions.groupToAssertion],//group negative lookbehind
     ['groupQualify>groupQualifiedStart','>',actions.groupAtomicGroup],//group atomic-group
     ['groupQualify>groupNameStart','<'],
     ['groupNameStart>groupName','a-zA-Z', actions.groupName],//group name

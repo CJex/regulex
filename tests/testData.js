@@ -2009,6 +2009,56 @@ var re2ast =[{ raw: '\\\\{3}',
     chars: 'b',
     raw: 'b'
   }],
+}, {
+  raw: '(?<!foo)bar.*(?<=foo)bar',
+  groupCount: 0,
+  tree: [{
+    type: 'assert',
+    num: undefined,
+    sub: [{
+      type: 'exact',
+      indices: [4, 7],
+      chars: 'foo',
+      raw: 'foo'
+    }],
+    indices: [0, 8],
+    assertionType: 'AssertNegativeLookbehind',
+    endParenIndex: 7,
+    raw: '(?<!foo)'
+  }, {
+    type: 'exact',
+    indices: [8, 11],
+    chars: 'bar',
+    raw: 'bar',
+  }, {
+    type: 'dot',
+    indices: [11, 13],
+    repeat: {
+      min: 0,
+      max: Infinity,
+      nonGreedy: false,
+      possessive: false
+    },
+    raw: '.*'
+  }, {
+    type: 'assert',
+    num: undefined,
+    sub: [{
+      type: 'exact',
+      indices: [17, 20],
+      chars: 'foo',
+      raw: 'foo'
+    }],
+    indices: [13, 21],
+    assertionType: 'AssertLookbehind',
+    endParenIndex: 20,
+    raw: '(?<=foo)'
+  }, {
+    type: 'exact',
+    indices: [21, 24],
+    chars: 'bar',
+    raw: 'bar'
+  }]
 }];
 
 

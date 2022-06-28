@@ -643,6 +643,14 @@ var plotNode={
       fg="Purple";
       //txt="Negative\nLookahead!"; // break line
       txt="Not followed by:";
+    } else if (nat === AssertLookbehind) {
+      lineColor="LightSeaGreen";
+      fg="Brown";
+      txt="Preceded by:";
+    } else if (nat === AssertNegativeLookbehind) {
+      lineColor="#F69";
+      fg="MediumVioletRed";
+      txt="Not preceded by:";
     }
 
     var sub=plotNode.group(node,x,y);
@@ -709,6 +717,8 @@ var hlColorMap={
   ')':'blue',
   '?=':'darkgreen',
   '?!':'red',
+  '?<!':'brown',
+  '?<=':'darkcyan',
   '?:':'grey',
   '[':'navy',
   ']':'navy',
@@ -740,6 +750,10 @@ function highlight(tree) {
       if (node.type===ASSERT_NODE) {
         if (node.assertionType===AssertLookahead) {
           texts.push(text('?='));
+        } else if (node.assertionType === AssertLookbehind) {
+          texts.push(text('?<='));
+        } else if (node.assertionType === AssertNegativeLookbehind) {
+          texts.push(text('?<!'));
         } else  {
           texts.push(text('?!'));
         }
