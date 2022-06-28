@@ -598,8 +598,11 @@ var actions=(function _() {
   }
   function groupName(stack,c,i,state,s) {
     var group=stack._parentGroup
-    if (state === 'groupNameStart' || state === 'groupNameStartP') {
+    if (state === 'groupNameStart') {
       group.name = c;
+    } else if (state === 'groupNameStartApos') {
+      group.name = c;
+      group.aops = true;
     } else {
       group.name += c;
     }
@@ -804,7 +807,7 @@ var actions=(function _() {
       stack.unshift(last);
       last.name = '';
       stack.groupCounter.i--;
-    } else if (state === 'nameBackrefStart') {
+    } else if (state === 'nameBackrefStart' || state === 'nameBackrefStartAops' || state === 'nameBackrefStartCub') {
       last={type:BACKREF_NODE,indices:[i-3]};
       stack.unshift(last);
       last.name = '';
@@ -863,8 +866,8 @@ var normalEscapeInCharsetEX='^'+charClassEscape+unicodeEscape+hexEscape+'0-9';
 
 // 'rntvf\\' escape ,others return raw
 // Also need exclude \b\B assertion and backref
-// Also need exclude \k (named backref)
-var normalEscapeEX=normalEscapeInCharsetEX+'bB1-9'+'k';
+// Also need exclude \k\g (named backref)
+var normalEscapeEX=normalEscapeInCharsetEX+'bB1-9'+'kg';
 
 //var controlEscape;//Never TODO.Same reason as OctEscape.
 
@@ -951,10 +954,22 @@ var config={
     ['digitBackref>digitBackref',digit,actions.backref],
     ['digitBackref>exact',exactEXCharset+digit,actions.exact],
     ['escape>nameBackrefK','k'],
+      // k<name>
     ['nameBackrefK>nameBackrefStart','<'],
-    ['nameBackrefStart>nameBackref','a-zA-Z',actions.nameBackref],
-    ['nameBackref>nameBackref','a-zA-Z0-9',actions.nameBackref],
+    ['nameBackrefStart>nameBackref','a-zA-Z_',actions.nameBackref],
+    ['nameBackref>nameBackref','a-zA-Z_0-9',actions.nameBackref],
     ['nameBackref>nameBackrefEnd','>'],
+      // k'name'
+    ['nameBackrefK>nameBackrefStartAops','\''],
+    ['nameBackrefStartAops>nameBackrefAops','a-zA-Z_',actions.nameBackref],
+    ['nameBackrefAops>nameBackrefAops','a-zA-Z_0-9',actions.nameBackref],
+    ['nameBackrefAops>nameBackrefEnd','\''],
+    // k{name}, g{name}
+    ['escape>nameBackrefG','g'],
+    ['nameBackrefK,nameBackrefG>nameBackrefStartCub','{'],
+    ['nameBackrefStartCub>nameBackrefCub','a-zA-Z_',actions.nameBackref],
+    ['nameBackrefCub>nameBackrefCub','a-zA-Z_0-9',actions.nameBackref],
+    ['nameBackrefCub>nameBackrefEnd','}'],
     // python format: (?P=...)
     ['groupNameP>nameBackrefStartP','='],
     ['nameBackrefStartP>nameBackrefP','a-zA-Z_',actions.nameBackref],
@@ -971,16 +986,17 @@ var config={
     ['groupNameStart>groupQualifiedStart','=',actions.groupToAssertion],//group positive lookbehind
     ['groupNameStart>groupQualifiedStart','!',actions.groupToAssertion],//group negative lookbehind
     ['groupQualify>groupQualifiedStart','>',actions.groupAtomicGroup],//group atomic-group
-    ['groupQualify>groupNameStart','<'],
-    ['groupNameStart>groupName','a-zA-Z', actions.groupName],//group name
-    ['groupName>groupName','a-zA-Z0-9', actions.groupName],//group name
-    ['groupName>groupNameEnd','>'],
     // python
     ['groupQualify>groupNameP','P',actions.groupNameP],
-    ['groupNameP>groupNameStartP','<'],
-    ['groupNameStartP>groupNameP','_a-zA-Z', actions.groupName],//group name
-    ['groupNameP>groupNameP','_a-zA-Z0-9', actions.groupName],//group name
-    ['groupNameP>groupNameEnd','>'],
+    ['groupQualify,groupNameP>groupNameStart','<'],
+    ['groupNameStart>groupName','a-zA-Z_', actions.groupName],//group name
+    ['groupName>groupName','a-zA-Z_0-9', actions.groupName],//group name
+    // single quote
+    ['groupQualify>groupNameStartApos','\''],
+    ['groupNameStartApos>groupNameApos','a-zA-Z_', actions.groupName],//group name
+    ['groupNameApos>groupNameApos','a-zA-Z_0-9', actions.groupName],//group name
+    ['groupNameApos>groupNameEnd','\''],
+    ['groupName>groupNameEnd','>'],
     [(repeatnStates+',nullChar,digitBackref,nameBackrefEnd,'+unicodeEscapeStates+','+hexEscapeStates)+',groupStart,groupQualifiedStart,groupNameEnd,begin,end,exact,repeat1,repeat0,repeat01,repeatn,repeatNonGreedy,choice>exact',')',actions.groupEnd],//group end
 
     //choice

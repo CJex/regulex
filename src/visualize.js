@@ -762,7 +762,7 @@ function highlight(tree) {
       } else if (node.atomicGroup) {
         texts.push(text('?>'));
       } else if (node.name) {
-        texts.push(text('?' + (node.nameP ? 'P' : '') + '<' + node.name + '>'));
+        texts.push(text('?' + (node.nameP ? 'P' : '') + (node.aops ? '\'' : '<') + node.name + (node.aops ? '\'' : '>')));
       }
       texts=texts.concat(highlight(node.sub));
       texts.push(text(')'));

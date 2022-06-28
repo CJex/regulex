@@ -2010,6 +2010,132 @@ var re2ast =[{ raw: '\\\\{3}',
     raw: 'b'
   }],
 }, {
+  raw: '(?\'digit\'\\d+)a\\k\'digit\'b',
+  groupCount: 1,
+  tree: [{
+    type: 'group',
+    num: 1,
+    sub: [{
+      type: 'charset',
+      indices: [9, 12],
+      chars: '',
+      ranges: [],
+      classes: ['d'],
+      exclude: false,
+      repeat: {
+        min: 1,
+        max: Infinity,
+        nonGreedy: false,
+        possessive: false
+      },
+      raw: '\\d+'
+    }],
+    indices: [0, 13],
+    name: 'digit',
+    aops: true,
+    endParenIndex: 12,
+    raw: '(?\'digit\'\\d+)'
+  }, {
+    type: 'exact',
+    indices: [13, 14],
+    chars: 'a',
+    raw: 'a'
+  }, {
+    type: 'backref',
+    indices: [14, 23],
+    name: 'digit',
+    raw: '\\k\'digit\''
+  }, {
+    type: 'exact',
+    indices: [23, 24],
+    chars: 'b',
+    raw: 'b'
+  }],
+}, {
+  raw: '(?\'digit\'\\d+)a\\k{digit}b',
+  groupCount: 1,
+  tree: [{
+    type: 'group',
+    num: 1,
+    sub: [{
+      type: 'charset',
+      indices: [9, 12],
+      chars: '',
+      ranges: [],
+      classes: ['d'],
+      exclude: false,
+      repeat: {
+        min: 1,
+        max: Infinity,
+        nonGreedy: false,
+        possessive: false
+      },
+      raw: '\\d+'
+    }],
+    indices: [0, 13],
+    name: 'digit',
+    aops: true,
+    endParenIndex: 12,
+    raw: '(?\'digit\'\\d+)'
+  }, {
+    type: 'exact',
+    indices: [13, 14],
+    chars: 'a',
+    raw: 'a'
+  }, {
+    type: 'backref',
+    indices: [14, 23],
+    name: 'digit',
+    raw: '\\k{digit}'
+  }, {
+    type: 'exact',
+    indices: [23, 24],
+    chars: 'b',
+    raw: 'b'
+  }],
+}, {
+  raw: '(?\'digit\'\\d+)a\\g{digit}b',
+  groupCount: 1,
+  tree: [{
+    type: 'group',
+    num: 1,
+    sub: [{
+      type: 'charset',
+      indices: [9, 12],
+      chars: '',
+      ranges: [],
+      classes: ['d'],
+      exclude: false,
+      repeat: {
+        min: 1,
+        max: Infinity,
+        nonGreedy: false,
+        possessive: false
+      },
+      raw: '\\d+'
+    }],
+    indices: [0, 13],
+    name: 'digit',
+    aops: true,
+    endParenIndex: 12,
+    raw: '(?\'digit\'\\d+)'
+  }, {
+    type: 'exact',
+    indices: [13, 14],
+    chars: 'a',
+    raw: 'a'
+  }, {
+    type: 'backref',
+    indices: [14, 23],
+    name: 'digit',
+    raw: '\\g{digit}'
+  }, {
+    type: 'exact',
+    indices: [23, 24],
+    chars: 'b',
+    raw: 'b'
+  }],
+}, {
   raw: '(?<!foo)bar.*(?<=foo)bar',
   groupCount: 0,
   tree: [{
