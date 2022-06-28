@@ -295,7 +295,7 @@ var plotNode={
   },
   backref:function (node,x,y) {
     var bgColor='navy',textColor='white';
-    var a=textRect('Backref #'+node.num,x,y,bgColor,textColor);
+    var a=textRect('Backref ' + (node.name !== undefined ? node.name : '#'+node.num),x,y,bgColor,textColor);
     a.rect.r=8;
     return a;
   },
@@ -603,7 +603,7 @@ var plotNode={
         stroke:lineColor,
         'stroke-width':strokeWidth
       };
-      var tl=textLabel(rect.x+rect.width/2,rect.y-strokeWidth,'Group #'+node.num);
+      var tl=textLabel(rect.x+rect.width/2,rect.y-strokeWidth,'Group ' + (node.name ? node.name + ', ' : '') + '# ' + node.num);
       var items=sub.items.concat([rect,tl.label]);
       var width=Math.max(tl.width,rectW);
       var offsetX=(width-rectW)/2;//ajust label text space
@@ -747,6 +747,8 @@ function highlight(tree) {
         texts.push(text('?:'));
       } else if (node.atomicGroup) {
         texts.push(text('?>'));
+      } else if (node.name) {
+        texts.push(text('?' + (node.nameP ? 'P' : '') + '<' + node.name + '>'));
       }
       texts=texts.concat(highlight(node.sub));
       texts.push(text(')'));
