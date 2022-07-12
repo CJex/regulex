@@ -1841,8 +1841,8 @@ var re2ast =[{ raw: '\\\\{3}',
     raw: '[\\u4e00-\\u9fa5]'
   }]
 }, {
-  raw: 'a*+b++c?+d{1,3}+',
-  groupCount: 0,
+  raw: 'a*+b++c?+d{1,3}+(e++)++',
+  groupCount: 1,
   tree: [{
     type: 'exact',
     repeat: {
@@ -1887,6 +1887,30 @@ var re2ast =[{ raw: '\\\\{3}',
     chars: 'd',
     indices: [9, 16],
     raw: 'd{1,3}+'
+  }, {
+    type: 'group',
+    num: 1,
+    sub: [{
+      type: 'exact',
+      repeat: {
+        min: 1,
+        max: Infinity,
+        nonGreedy: false,
+        possessive: true
+      },
+      chars: 'e',
+      indices: [17, 20],
+      raw: 'e++'
+    }],
+    indices: [16, 23],
+    endParenIndex: 20,
+    repeat: {
+      min: 1,
+      max: Infinity,
+      nonGreedy: false,
+      possessive: true
+    },
+    raw: '(e++)++'
   }]
 }, {
   raw: 'a(?>bc|d)e',

@@ -780,11 +780,6 @@ var actions=(function _() {
         type:'InvalidBackReference',lastIndex:i,astStack:stack,lastState:state,
         message:'Back reference number('+n+') greater than current groups count('+cn+').'
       });
-    } else if (_isRecursive(n,stack)) {
-      throw new RegexSyntaxError({
-        type:'InvalidBackReference',lastIndex:i,astStack:stack,lastState:state,
-        message:'Recursive back reference in group ('+n+') itself.'
-      });
     }
     last.num=n;
 
@@ -997,7 +992,7 @@ var config={
     ['groupNameApos>groupNameApos','a-zA-Z_0-9', actions.groupName],//group name
     ['groupNameApos>groupNameEnd','\''],
     ['groupName>groupNameEnd','>'],
-    [(repeatnStates+',nullChar,digitBackref,nameBackrefEnd,'+unicodeEscapeStates+','+hexEscapeStates)+',groupStart,groupQualifiedStart,groupNameEnd,begin,end,exact,repeat1,repeat0,repeat01,repeatn,repeatNonGreedy,choice>exact',')',actions.groupEnd],//group end
+    [(repeatnStates+',nullChar,digitBackref,nameBackrefEnd,'+unicodeEscapeStates+','+hexEscapeStates)+',groupStart,groupQualifiedStart,groupNameEnd,begin,end,exact,repeat1,repeat0,repeat01,repeatn,repeatNonGreedy,repeatPossessive,choice>exact',')',actions.groupEnd],//group end
 
     //choice
     ['start,begin,end,groupStart,groupQualifiedStart,groupNameEnd,exact,repeat0,repeat1,repeat01,repeatn,repeatNonGreedy,repeatPossessive,choice,'+(repeatnStates+',nullChar,digitBackref,nameBackrefEnd,'+unicodeEscapeStates+','+hexEscapeStates)+'>choice','|', actions.choice],

@@ -357,7 +357,7 @@ var plotNode={
       } else if (repeat.possessive) {
         //txt+="(Possessive!)";
         p.stroke="Sienna";
-        p['stroke-dasharray']="-";
+        p['stroke-dasharray']="--";
       }
       items.push(p);
     } else { // so completely remove label when /a?/ but not /a??/
