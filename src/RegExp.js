@@ -212,7 +212,7 @@ var NFABuilders=(function _() {
     var groupStart=[newState()];
     var ts=[{
       from:from,to:groupStart,charset:false,
-      action:!node.nonCapture && function _groupStart(stack,c,i) {
+      action:!node.nonCapture && !node.atomicGroup && function _groupStart(stack,c,i) {
         stack.unshift({type:GROUP_CAPTURE_START,num:node.num,index:i});
       }
     }];
@@ -223,7 +223,7 @@ var NFABuilders=(function _() {
     var groupEnd=[newState()];
     ts.push({
       from:a.accepts,to:groupEnd,charset:false,
-      action:!node.nonCapture && function _groupEnd(stack,c,i) {
+      action:!node.nonCapture && !node.atomicGroup && function _groupEnd(stack,c,i) {
         stack.unshift({type:GROUP_CAPTURE_END,num:node.num,index:i});
       }
     });
@@ -284,6 +284,12 @@ var NFABuilders=(function _() {
       case AssertNegativeLookahead:
         f=_negativeLookahead(node);
         break;
+      case AssertLookbehind:
+        f=_lookbehind(node);
+        break;
+      case AssertNegativeLookbehind:
+        f=_negativeLookbehind(node);
+        break;
     }
     return _newAssert(node,from,f);
 
@@ -304,9 +310,20 @@ var NFABuilders=(function _() {
         return ret.acceptable;
       };
     }
+    function _lookbehind(node) {
+      var m=NFA(tree2NFA(node.sub,['start']));
+      return function _Lookbehind(stack,c,i,state,s) {
+        var ret=m.input(s,i,null,stack);
+        return ret.acceptable;
+      };
+    }
     function _negativeLookahead(node) {
       var f=_lookahead(node);
       return function _NLookahead() {return !f.apply(this,arguments)};
+    }
+    function _negativeLookbehind(node) {
+      var f=_lookbehind(node);
+      return function _NLookbehind() {return !f.apply(this,arguments)};
     }
 
     function _isBoundary(i,s) {return !!(_isWordChar(i-1,s) ^ _isWordChar(i,s))}
@@ -359,7 +376,7 @@ function repeatNFA(node,from) {
     });
   }
   var endState=[newState()];
-  if (repeat.nonGreedy) {
+  if (repeat.nonGreedy || repeat.possessive) {
     trans.push({
       from:accepts,to:endState,charset:false
     });

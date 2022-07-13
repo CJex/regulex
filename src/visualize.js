@@ -295,7 +295,7 @@ var plotNode={
   },
   backref:function (node,x,y) {
     var bgColor='navy',textColor='white';
-    var a=textRect('Backref #'+node.num,x,y,bgColor,textColor);
+    var a=textRect('Backref ' + (node.name !== undefined ? node.name : '#'+node.num),x,y,bgColor,textColor);
     a.rect.r=8;
     return a;
   },
@@ -304,6 +304,7 @@ var plotNode={
     var padding=10,LABEL_MARGIN=4;
     var repeat=node.repeat,txt="",items=[];
     var NonGreedySkipPathColor='darkgreen';
+    var PossessiveSkipPathColor='lightgreen';
     /*if (repeat.min===0 && !node._branched) {
       node._branched=true;
       return plotNode.choice({type:CHOICE_NODE,branches:[[{type:EMPTY_NODE}],[node]]},x,y);
@@ -353,6 +354,10 @@ var plotNode={
         //txt+="(NonGreedy!)";
         p.stroke="Brown";
         p['stroke-dasharray']="-";
+      } else if (repeat.possessive) {
+        //txt+="(Possessive!)";
+        p.stroke="Sienna";
+        p['stroke-dasharray']="--";
       }
       items.push(p);
     } else { // so completely remove label when /a?/ but not /a??/
@@ -377,7 +382,7 @@ var plotNode={
               'Q',x+skipRectW-r,y,x+skipRectW,y
             ],
         _translate:_curveTranslate,
-        stroke:repeat.nonGreedy? NonGreedySkipPathColor:'#333',
+        stroke:repeat.nonGreedy? NonGreedySkipPathColor: repeat.possessive? PossessiveSkipPathColor:'#333',
         'stroke-width':2
       };
       if (p) translate([p],padding,0);
@@ -598,7 +603,7 @@ var plotNode={
         stroke:lineColor,
         'stroke-width':strokeWidth
       };
-      var tl=textLabel(rect.x+rect.width/2,rect.y-strokeWidth,'Group #'+node.num);
+      var tl=textLabel(rect.x+rect.width/2,rect.y-strokeWidth,'Group ' + (node.name ? node.name + ', ' : '') + '# ' + node.num);
       var items=sub.items.concat([rect,tl.label]);
       var width=Math.max(tl.width,rectW);
       var offsetX=(width-rectW)/2;//ajust label text space
@@ -638,6 +643,14 @@ var plotNode={
       fg="Purple";
       //txt="Negative\nLookahead!"; // break line
       txt="Not followed by:";
+    } else if (nat === AssertLookbehind) {
+      lineColor="LightSeaGreen";
+      fg="Brown";
+      txt="Preceded by:";
+    } else if (nat === AssertNegativeLookbehind) {
+      lineColor="#F69";
+      fg="MediumVioletRed";
+      txt="Not preceded by:";
     }
 
     var sub=plotNode.group(node,x,y);
@@ -704,6 +717,8 @@ var hlColorMap={
   ')':'blue',
   '?=':'darkgreen',
   '?!':'red',
+  '?<!':'brown',
+  '?<=':'darkcyan',
   '?:':'grey',
   '[':'navy',
   ']':'navy',
@@ -715,6 +730,7 @@ var hlColorMap={
   '+':'maroon',
   '?':'maroon',
   repeatNonGreedy:'#F61',
+  repeatPossessive:'#FC1',
   defaults:'black',
   charsetRange:'olive',
   charsetClass:'navy',
@@ -734,11 +750,19 @@ function highlight(tree) {
       if (node.type===ASSERT_NODE) {
         if (node.assertionType===AssertLookahead) {
           texts.push(text('?='));
+        } else if (node.assertionType === AssertLookbehind) {
+          texts.push(text('?<='));
+        } else if (node.assertionType === AssertNegativeLookbehind) {
+          texts.push(text('?<!'));
         } else  {
           texts.push(text('?!'));
         }
       } else if (node.nonCapture) {
         texts.push(text('?:'));
+      } else if (node.atomicGroup) {
+        texts.push(text('?>'));
+      } else if (node.name) {
+        texts.push(text('?' + (node.nameP ? 'P' : '') + (node.aops ? '\'' : '<') + node.name + (node.aops ? '\'' : '>')));
       }
       texts=texts.concat(highlight(node.sub));
       texts.push(text(')'));
@@ -788,6 +812,8 @@ function highlight(tree) {
       }
       if (node.repeat.nonGreedy) {
         texts.push(text('?',hlColorMap.repeatNonGreedy));
+      } else if (node.repeat.possessive) {
+        texts.push(text('+',hlColorMap.repeatPossessive));
       }
     }
   });
